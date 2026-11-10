@@ -1,0 +1,7 @@
+# Text with LF line endings in the repository, whatever system it's checked out on.
+* text=auto eol=lf
+
+*.png binary
+*.webp binary
+*.ico binary
+*.zip binary

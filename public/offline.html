@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#08070e" />
+    <title>Offline · ShadowCrypts</title>
+    <!-- Self-contained on purpose: the service worker serves this when there's no connection, so it can't depend on any script or stylesheet. -->
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 16px;
+        background: radial-gradient(60% 60% at 20% 0%, rgba(124, 58, 237, 0.18), transparent 70%), #08070e;
+        color: #f5f3fc;
+        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      main {
+        width: 100%;
+        max-width: 440px;
+        padding: 32px 24px;
+        text-align: center;
+        border: 1px solid #29253e;
+        border-radius: 16px;
+        background: #110f1c;
+      }
+      img { width: 56px; height: 56px; }
+      h1 { margin: 16px 0 8px; font-size: 20px; }
+      p { margin: 0; color: #bab5ce; font-size: 14px; line-height: 1.6; }
+      a {
+        display: inline-block;
+        margin-top: 24px;
+        padding: 10px 16px;
+        border-radius: 12px;
+        background: #8b5cf6;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icon" alt="" />
+      <h1>You're offline</h1>
+      <p>This page wasn't saved on this device yet. Pages you've already opened still work offline, showing the last forecasts you saw. Reconnect for live scores and updates.</p>
+      <a href="/">Try today's board</a>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64">
+<defs>
+<linearGradient id="sc-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c1236"/><stop offset="1" stop-color="#06040c"/></linearGradient>
+<linearGradient id="sc-cloak" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a78bfa"/><stop offset="0.45" stop-color="#7c3aed"/><stop offset="1" stop-color="#2e1065"/></linearGradient>
+<radialGradient id="sc-void" cx="0.5" cy="0.35" r="0.75"><stop offset="0" stop-color="#140b2b"/><stop offset="1" stop-color="#030208"/></radialGradient>
+<radialGradient id="sc-glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#67e8f9" stop-opacity="0.55"/><stop offset="1" stop-color="#67e8f9" stop-opacity="0"/></radialGradient>
+<clipPath id="sc-clip"><rect width="64" height="64" rx="0"/></clipPath>
+</defs>
+<rect width="64" height="64" rx="0" fill="url(#sc-bg)"/>
+<g clip-path="url(#sc-clip)">
+<path d="M32 6C23 12 14.5 22 14.5 36C14.5 43 11 50 4 57V90H60V57C53 50 49.5 43 49.5 36C49.5 22 41 12 32 6Z" fill="url(#sc-cloak)"/>
+<path d="M32.2 7.2C24.6 12.6 16.2 22 15.8 35.5" fill="none" stroke="#ede9fe" stroke-opacity="0.55" stroke-width="1.3" stroke-linecap="round"/>
+<path d="M13.5 50.5C17.5 55 19.5 60 20.5 68M50.5 50.5C46.5 55 44.5 60 43.5 68" fill="none" stroke="#1e0b4a" stroke-opacity="0.55" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M18.6 51V35A16.4 16.4 0 0 1 32 14.6A16.4 16.4 0 0 1 45.4 35V51C39 55 25 55 18.6 51Z" fill="#2a0e63" fill-opacity="0.8"/>
+<path d="M21 49V35A14 14 0 0 1 32 17.5A14 14 0 0 1 43 35V49C38 52.5 26 52.5 21 49Z" fill="url(#sc-void)"/>
+<ellipse cx="32" cy="35" rx="12" ry="6" fill="url(#sc-glow)"/>
+<path d="M23.8 32.8L30.2 34.7L25 36.3Z" fill="#a5f3fc"/>
+<path d="M40.2 32.8L33.8 34.7L39 36.3Z" fill="#a5f3fc"/>
+</g>
+
+</svg>

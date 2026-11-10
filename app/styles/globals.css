@@ -1,0 +1,307 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Theme tokens: space-separated RGB so Tailwind can apply opacity (bg-accent/15).
+ * Every text color clears WCAG AA (4.5:1) on every background it's used on in
+ * both themes, tinted pills included: white on accent 5.7, ink-3 on raised 5.4.
+ */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: 8 7 14;
+  --surface: 17 15 28;
+  --raised: 27 24 42;
+  --line: 41 37 62;
+  --line-strong: 62 56 92;
+  --ink: 245 243 252;
+  --ink-2: 186 181 206;
+  --ink-3: 146 140 170;
+  --accent: 124 58 237;
+  --accent-strong: 186 164 255;
+  --accent-2: 34 211 238;
+  --on-accent: 255 255 255;
+  --track: 46 42 70;
+  --good: 52 211 153;
+  --bad: 251 113 133;
+  --warn: 251 191 36;
+  --highlight: 255 255 255;
+  --shadow: 0 0 0;
+  --glow-a: 124 58 237;
+  --glow-b: 14 165 233;
+  --live: 248 113 113;
+  --live-solid: 200 30 30;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: 246 245 251;
+  --surface: 255 255 255;
+  --raised: 242 240 249;
+  --line: 227 224 238;
+  --line-strong: 203 198 222;
+  --ink: 19 16 31;
+  --ink-2: 72 67 95;
+  --ink-3: 100 94 124;
+  --accent: 124 58 237;
+  --accent-strong: 104 38 214;
+  --accent-2: 14 116 144;
+  --on-accent: 255 255 255;
+  --track: 225 221 238;
+  --good: 4 108 78;
+  --bad: 190 18 60;
+  --warn: 161 72 6;
+  --highlight: 255 255 255;
+  --shadow: 40 30 80;
+  --glow-a: 167 139 250;
+  --glow-b: 103 232 249;
+  --live: 185 28 28;
+  --live-solid: 185 28 28;
+}
+
+/* Chart tokens (full colors, used directly in SVG attributes). */
+:root {
+  --series-1: rgb(var(--accent));
+  --series-2: rgb(var(--accent-2));
+  --grid: rgb(var(--line) / 0.7);
+  --axis: rgb(var(--line-strong));
+  --text-muted: rgb(var(--ink-3));
+  --text-secondary: rgb(var(--ink-2));
+  --surface-1: rgb(var(--surface));
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background-color: rgb(var(--bg));
+  color: rgb(var(--ink));
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * The owner's ShadowCrypt mark behind every page, under the glow. Each file is the image already blended into
+ * that theme's own background color (scripts/make-backdrop.mjs), at the strongest level where the faintest
+ * small text (ink-3) still clears 4.5:1 on every pixel of it, so the edges meet the page seamlessly and nothing
+ * here can make text harder to read. Fixed: the page scrolls over it. Cards are solid, so it shows between them.
+ */
+.site-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  /* The tallest the viewport gets, so it doesn't rescale as a phone's address bar slides away. */
+  height: 100lvh;
+  z-index: -2;
+  pointer-events: none;
+  background-color: rgb(var(--bg));
+  background-image: url('/backdrop-wide-dark.webp');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center 40%;
+}
+:root[data-theme='light'] .site-backdrop {
+  background-image: url('/backdrop-wide-light.webp');
+}
+/* Phones and other tall screens: a crop around the hood, so the eyes stay in view. */
+@media (max-aspect-ratio: 4/5) {
+  .site-backdrop {
+    background-image: url('/backdrop-tall-dark.webp');
+    background-position: center 30%;
+  }
+  :root[data-theme='light'] .site-backdrop {
+    background-image: url('/backdrop-tall-light.webp');
+  }
+}
+/* Anyone who's asked their system for more contrast, or forced its colors, gets the plain background. */
+@media print, (prefers-contrast: more), (forced-colors: active) {
+  .site-backdrop {
+    display: none;
+  }
+}
+
+/* Soft brand glow behind the top of every page, drifting slowly like an aurora. */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: -10% -10% auto -10%;
+  height: 620px;
+  z-index: -1;
+  pointer-events: none;
+  will-change: transform;
+}
+body::before {
+  background:
+    radial-gradient(55% 65% at 15% -5%, rgb(var(--glow-a) / 0.2), transparent 70%),
+    radial-gradient(40% 55% at 90% -15%, rgb(var(--glow-b) / 0.11), transparent 70%);
+  animation: aurora 22s ease-in-out infinite;
+}
+body::after {
+  background: radial-gradient(35% 45% at 55% -10%, rgb(var(--glow-b) / 0.08), transparent 70%);
+  animation: aurora 31s ease-in-out -9s infinite reverse;
+}
+@keyframes aurora {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, 2.5%, 0) scale(1.08);
+  }
+}
+
+/* Moving between pages: the old one fades quickly, the new one rises in. The header and ticker stay put. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-old(.page-out) {
+  animation: 120ms ease-in both vt-fade reverse;
+}
+::view-transition-new(.page-in) {
+  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both vt-rise;
+}
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes vt-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgb(var(--accent) / 0.35);
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  /*
+   * A sideways scroller is the containing block for what's inside it. Otherwise an
+   * absolutely positioned child (screen-reader text in a wide table, say) is placed
+   * against something outside, escapes the clipping, and widens the whole page on phones.
+   */
+  .overflow-x-auto {
+    position: relative;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .text-gradient {
+    background: linear-gradient(100deg, rgb(var(--accent-strong)), rgb(var(--accent-2)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-card;
+    /* A faint sheen at the top edge, as if lit from above. */
+    background-image: linear-gradient(180deg, rgb(var(--highlight) / 0.035), rgb(var(--highlight) / 0) 140px);
+  }
+  .chip {
+    @apply inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-line transition;
+  }
+  .chip-idle {
+    @apply bg-surface text-ink-2 hover:bg-raised hover:text-ink;
+  }
+  .chip-active {
+    @apply bg-accent/15 text-ink ring-accent/50;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.14em] text-accent-strong;
+  }
+  .skeleton {
+    background: linear-gradient(90deg, rgb(var(--raised)) 0%, rgb(var(--line)) 50%, rgb(var(--raised)) 100%);
+    background-size: 200% 100%;
+    @apply animate-shimmer rounded-lg;
+  }
+}
+
+/* The score ticker: edges fade out, the strip drifts by one copy's width and loops, and hovering or tabbing in holds it. */
+.ticker-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 32px), transparent);
+}
+.ticker-drift {
+  animation: ticker var(--ticker-duration, 60s) linear infinite;
+}
+.ticker-mask:hover .ticker-drift,
+.ticker-mask:focus-within .ticker-drift {
+  animation-play-state: paused;
+}
+@keyframes ticker {
+  to {
+    transform: translateX(var(--ticker-distance, 0));
+  }
+}
+
+/* Chart bars rise from the baseline, one after another (the reduced-motion rule below cuts it to nothing). */
+.bar-rise {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: bar-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+@keyframes bar-rise {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Still, not drifting: scroll it by hand instead. */
+  .ticker-mask {
+    overflow-x: auto;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,41 @@
+# Runs the site and the forecast refresher together, sharing one data volume.
+#   docker compose up -d --build
+#   docker compose run --rm web npm run warm   (optional: download every season up front)
+# Set SITE_URL to the public address (https://...) so shared links and the calendar feed point there.
+
+services:
+  web:
+    build: .
+    image: shadowcrypts-predictions
+    ports:
+      # WEB_PORT picks the port on your machine (default 3000); the app listens on 3000 inside. It's published
+      # on this machine only (WEB_BIND), for a reverse proxy here to reach; WEB_BIND=0.0.0.0 opens it to your networks.
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3000}:3000"
+    environment:
+      SITE_URL: ${SITE_URL:-http://localhost:3000}
+      # Behind a reverse proxy, 1 (one per proxy that adds X-Forwarded-For), so rate limits see real addresses.
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-0}
+      SECURITY_CONTACT: ${SECURITY_CONTACT:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+    volumes:
+      - cache:/app/.cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  # Rebuilds each league's model on a schedule so logged forecasts lock close to game time.
+  refresher:
+    image: shadowcrypts-predictions
+    command: ["npm", "run", "refresh"]
+    volumes:
+      - cache:/app/.cache
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  cache:

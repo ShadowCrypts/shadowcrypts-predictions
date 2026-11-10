@@ -1,0 +1,22 @@
+node_modules
+.next
+out
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# Data the app writes, including the private key that signs push alerts (.cache/push-vapid.json).
+.cache
+# Secrets and settings: every .env file but the template.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+tsconfig.tsbuildinfo
+# Local backups and editor or assistant settings: not part of the project.
+*.zip
+.claude/
+.vscode/
+.idea/
+coverage/

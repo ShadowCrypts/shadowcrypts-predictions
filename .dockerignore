@@ -1,0 +1,12 @@
+node_modules
+.next
+.cache
+.claude
+*.zip
+tsconfig.tsbuildinfo
+npm-debug.log*
+# Secrets never go into the image; pass them to the container at run time instead.
+.env
+.env.*
+*.pem
+*.key

@@ -1,0 +1,52 @@
+{
+  "name": "shadowcrypts-predictions",
+  "version": "0.1.0",
+  "description": "Win probabilities, player props, fantasy rankings and a public, graded track record for every NFL, NBA, MLB and NHL game.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShadowCrypts/shadowcrypts-predictions.git"
+  },
+  "engines": {
+    "node": ">=20.9"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "next dev -H 127.0.0.1",
+    "build": "next build",
+    "start": "next start -H 127.0.0.1",
+    "serve": "tsx scripts/serve.ts",
+    "prod": "next build && tsx scripts/serve.ts",
+    "lint": "eslint app lib scripts tests proxy.ts instrumentation.ts next.config.ts",
+    "typecheck": "tsc --noEmit -p .",
+    "verify": "npm run typecheck && npm run lint && npm test",
+    "smoke": "node scripts/smoke.mjs",
+    "datacheck": "node scripts/datacheck.mjs",
+    "test": "tsx --test \"tests/*.test.ts\"",
+    "warm": "tsx scripts/warm.ts",
+    "refresh": "tsx scripts/refresh.ts",
+    "backtest": "tsx scripts/backtest.ts",
+    "audit": "node scripts/audit.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "0.545.0",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "web-push": "3.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/web-push": "3.6.4",
+    "autoprefixer": "10.4.19",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.3",
+    "lighthouse": "13.5.0",
+    "postcss": "8.5.32",
+    "tailwindcss": "3.4.4",
+    "tsx": "^4.19.2",
+    "typescript": "5.6.2"
+  }
+}
