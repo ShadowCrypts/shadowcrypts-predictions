@@ -9,6 +9,8 @@
   built on free public data, tested against the betting market, and honest about where it loses.
 </p>
 
+<p align="center"><strong>Live: <a href="https://shadowcrypts.com">shadowcrypts.com</a></strong></p>
+
 <p align="center">
   <a href="https://github.com/ShadowCrypts/shadowcrypts-predictions/actions/workflows/ci.yml"><img src="https://github.com/ShadowCrypts/shadowcrypts-predictions/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/license-MIT-7c3aed" alt="MIT License">
@@ -120,6 +122,7 @@ scripts/      backtests, warm-up, refresher, and the smoke, data and Lighthouse 
 tests/        unit tests (node:test)
 docs/         features in detail, running and hosting it, the API, screenshots
 public/       service worker, offline page, signature and backdrop images
+deploy/       server setup, the update-site command, the service and the Caddy config
 assets/, brand/   the ShadowCrypt artwork (not under the code's license)
 ```
 
@@ -128,6 +131,7 @@ assets/, brand/   the ShadowCrypt artwork (not under the code's license)
 - [docs/FEATURES.md](docs/FEATURES.md): everything the site does, how, and what it was measured against
 - [docs/OPERATIONS.md](docs/OPERATIONS.md): setup, every script, hosting, security and the quality bar
 - [docs/API.md](docs/API.md): the JSON and CSV endpoints
+- [deploy/README.md](deploy/README.md): how the live site runs, on one small Ubuntu server, and how it's updated
 - [SECURITY.md](SECURITY.md): protections, the audit log and how to report a problem
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 

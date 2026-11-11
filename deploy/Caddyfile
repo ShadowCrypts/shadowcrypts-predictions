@@ -1,0 +1,24 @@
+# Caddy: HTTPS for the site (certificates from Let's Encrypt, renewed on their own) in front of the app,
+# which listens on this server only (127.0.0.1:3000). setup-server.sh puts this in /etc/caddy/Caddyfile.
+{
+	servers {
+		# A slow or stalled upload can't hold a connection open (the app also caps bodies itself).
+		timeouts {
+			read_header 10s
+			read_body 15s
+			idle 2m
+		}
+	}
+}
+
+shadowcrypts.com {
+	request_body {
+		max_size 64KB
+	}
+	reverse_proxy 127.0.0.1:3000
+}
+
+# One address for search engines: www goes to the plain one.
+www.shadowcrypts.com {
+	redir https://shadowcrypts.com{uri} permanent
+}

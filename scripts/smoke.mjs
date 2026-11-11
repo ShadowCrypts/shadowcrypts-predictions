@@ -299,7 +299,13 @@ async function main() {
   check('sitemap lists the privacy page and not the plans page', map.includes('/privacy</loc>') && !map.includes('/plans</loc>'));
   const offline = await get('/offline.html');
   check('/offline.html locked-down CSP', (offline.response.headers.get('content-security-policy') ?? '').startsWith("default-src 'none'"));
-  if (!process.env.SECURITY_CONTACT) check('security.txt absent without a contact', (await get('/.well-known/security.txt')).response.status === 404);
+  // Whether the server has a contact set is its own business (this machine's settings say nothing about it):
+  // either nothing is published, or a well-formed file is (RFC 9116: a Contact and an Expires line).
+  const securityTxt = await get('/.well-known/security.txt');
+  check(
+    'security.txt absent, or well-formed with a contact',
+    securityTxt.response.status === 404 || (securityTxt.response.status === 200 && /^Contact: (mailto|https):/m.test(securityTxt.body) && /^Expires: \d{4}-/m.test(securityTxt.body))
+  );
 
   const settled = await Promise.all(results.map(async (r) => ({ ...r, ok: await r.ok })));
   const failed = settled.filter((r) => !r.ok);

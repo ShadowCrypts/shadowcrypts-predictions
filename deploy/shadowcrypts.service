@@ -1,0 +1,25 @@
+[Unit]
+Description=ShadowCrypts Predictions: the website and the forecast refresher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=shadowcrypts
+Group=shadowcrypts
+WorkingDirectory=/srv/shadowcrypts/current
+EnvironmentFile=/srv/shadowcrypts/shared/.env
+# scripts/serve.ts runs the site and the refresher, and restarts either if it crashes; systemd restarts it.
+ExecStart=/usr/local/bin/npm run serve
+Restart=always
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=20
+# It needs nothing beyond its own folders.
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=true
+ReadWritePaths=/srv/shadowcrypts
+
+[Install]
+WantedBy=multi-user.target
