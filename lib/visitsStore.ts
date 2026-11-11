@@ -3,7 +3,7 @@
 // never touches a page. `npm run visits` prints them.
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { addVisit, DayCounts, emptyDay, mergeDays } from './visits';
+import { addRobot, addVisit, DayCounts, emptyDay, mergeDays, RobotReason } from './visits';
 
 const FLUSH_MS = 60_000;
 const KEY = '__shadowcryptsVisits';
@@ -14,10 +14,19 @@ const state = () => ((globalThis as unknown as Record<string, State>)[KEY] ??= {
 export const visitsDir = () => path.join(process.cwd(), '.cache', 'visits');
 
 export function recordVisit(page: string, from: string | null, now = new Date()) {
+  record(now, (counts) => addVisit(counts, page, from));
+}
+
+/** A page load set aside as a robot: a separate total, so the people count stays people. */
+export function recordRobot(page: string, why: RobotReason, now = new Date()) {
+  record(now, (counts) => addRobot(counts, page, why));
+}
+
+function record(now: Date, add: (counts: DayCounts) => void) {
   const s = state();
   const day = now.toISOString().slice(0, 10);
   const counts = s.pending.get(day) ?? emptyDay();
-  addVisit(counts, page, from);
+  add(counts);
   s.pending.set(day, counts);
   if (!s.timer) {
     s.timer = setTimeout(() => {

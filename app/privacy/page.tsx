@@ -62,7 +62,8 @@ export default function PrivacyPage() {
           items={[
             'Each day the server adds up how many times someone opened the site, which kind of page they landed on (for example, “an NBA game page”), and the name of the website that sent them (for example, google.com).',
             'That’s all. No IP addresses, no cookies, no browser fingerprints, and no record of anyone visit by visit: only totals for the day.',
-            'Robots, link previews and moving between pages inside the site aren’t counted.'
+            'Moving between pages inside the site isn’t counted. Robots and link previews are kept out of the count, in a daily total of their own (with which kind of page they opened and why they were taken for a robot), so we can tell how many there were.',
+            'Telling them apart uses what every browser sends with a page anyway (its name, and headers saying it’s opening a page and which language it reads), checked as the page loads and then forgotten.'
           ]}
         />
       </Section>

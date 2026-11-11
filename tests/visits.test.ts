@@ -3,37 +3,37 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { addVisit, countable, DayCounts, emptyDay, MAX_KEYS, mergeDays, pageKind, referrerHost } from '../lib/visits';
-import { flushVisits, recordVisit } from '../lib/visitsStore';
+import { addRobot, addVisit, countable, DayCounts, emptyDay, MAX_KEYS, mergeDays, pageKind, referrerHost, visitor } from '../lib/visits';
+import { flushVisits, recordRobot, recordVisit } from '../lib/visitsStore';
 
 const CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
+const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1';
 const headers = (o: Record<string, string>) => (name: string) => o[name] ?? null;
 
 describe('who counts as a visitor', () => {
-  const page = { 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document', 'user-agent': CHROME };
+  const page = { 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document', 'accept-language': 'en-US,en;q=0.9', 'user-agent': CHROME };
 
-  it('counts a person opening a page', () => {
+  it('counts a person opening a page, in any browser', () => {
+    assert.equal(visitor('GET', headers(page)), 'person');
+    assert.equal(visitor('GET', headers({ ...page, 'user-agent': SAFARI })), 'person');
+    assert.equal(visitor('GET', headers({ ...page, 'sec-ch-ua': '"Google Chrome";v="141", "Chromium";v="141", "Not=A?Brand";v="24"' })), 'person');
     assert.equal(countable('GET', headers(page)), true);
-    // A browser too old to say what it's fetching, asking for a page.
-    assert.equal(countable('GET', headers({ accept: 'text/html,application/xhtml+xml', 'user-agent': CHROME })), true);
   });
 
   it("counts a page load the site's offline service worker passed on (Chrome sends it as mode navigate, destination empty)", () => {
-    assert.equal(countable('GET', headers({ ...page, 'sec-fetch-dest': 'empty', accept: 'text/html' })), true);
+    assert.equal(visitor('GET', headers({ ...page, 'sec-fetch-dest': 'empty', accept: 'text/html' })), 'person');
   });
 
-  it("leaves out the app's own background fetches, images, frames, prefetches and prerenders", () => {
-    assert.equal(countable('GET', headers({ 'sec-fetch-mode': 'cors', 'sec-fetch-dest': 'empty', 'user-agent': CHROME })), false);
-    assert.equal(countable('GET', headers({ 'sec-fetch-mode': 'no-cors', 'sec-fetch-dest': 'image', 'user-agent': CHROME })), false);
-    assert.equal(countable('GET', headers({ ...page, 'sec-fetch-dest': 'iframe' })), false);
-    assert.equal(countable('GET', headers({ ...page, 'sec-purpose': 'prefetch;prerender' })), false);
-    assert.equal(countable('GET', headers({ ...page, purpose: 'prefetch' })), false);
-    assert.equal(countable('GET', headers({ 'sec-fetch-dest': 'document', 'user-agent': CHROME })), false);
-    assert.equal(countable('GET', headers({ 'user-agent': CHROME })), false);
-    assert.equal(countable('HEAD', headers(page)), false);
+  it("isn't a page load at all: the app's own background fetches, images, frames, prefetches, prerenders", () => {
+    assert.equal(visitor('GET', headers({ 'sec-fetch-mode': 'cors', 'sec-fetch-dest': 'empty', 'user-agent': CHROME })), null);
+    assert.equal(visitor('GET', headers({ 'sec-fetch-mode': 'no-cors', 'sec-fetch-dest': 'image', 'user-agent': CHROME })), null);
+    assert.equal(visitor('GET', headers({ ...page, 'sec-fetch-dest': 'iframe' })), null);
+    assert.equal(visitor('GET', headers({ ...page, 'sec-purpose': 'prefetch;prerender' })), null);
+    assert.equal(visitor('GET', headers({ ...page, purpose: 'prefetch' })), null);
+    assert.equal(visitor('HEAD', headers(page)), null);
   });
 
-  it('leaves out robots, link previews, test tools and anything without a name', () => {
+  it('sets aside robots, link previews, test tools and anything without a name', () => {
     for (const agent of [
       'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
       'facebookexternalhit/1.1',
@@ -41,12 +41,25 @@ describe('who counts as a visitor', () => {
       'Slackbot-LinkExpanding 1.0',
       'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36',
       'Mozilla/5.0 (Linux; Android 11) Chrome-Lighthouse',
+      'Scrapy/2.13 (+https://scrapy.org)',
       'curl/8.4.0',
       'node',
       ''
     ]) {
-      assert.equal(countable('GET', headers({ 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document', 'user-agent': agent })), false, agent);
+      assert.equal(visitor('GET', headers({ ...page, 'user-agent': agent })), 'named', agent);
     }
+    // A headless Chrome given a normal name still lists itself in its brands.
+    assert.equal(visitor('GET', headers({ ...page, 'sec-ch-ua': '"HeadlessChrome";v="141", "Chromium";v="141"' })), 'named');
+  });
+
+  it("sets aside a program giving a browser's name without what a browser sends with a page", () => {
+    // No fetch metadata: a script with a browser's name, asking for HTML like a browser would.
+    assert.equal(visitor('GET', headers({ accept: 'text/html,application/xhtml+xml', 'accept-language': 'en-US', 'user-agent': CHROME })), 'no-fetch-metadata');
+    assert.equal(visitor('GET', headers({ 'user-agent': CHROME })), 'no-fetch-metadata');
+    assert.equal(visitor('GET', headers({ 'sec-fetch-dest': 'document', 'user-agent': CHROME })), 'no-fetch-metadata');
+    // Fetch metadata copied over, but no language.
+    assert.equal(visitor('GET', headers({ 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document', 'user-agent': CHROME })), 'no-language');
+    assert.equal(countable('GET', headers({ 'user-agent': CHROME })), false);
   });
 });
 
@@ -87,6 +100,20 @@ describe('what a visit records', () => {
     const b = { arrivals: 2, pages: { '/nba': 2 }, from: { 'x.com': 2 } };
     assert.deepEqual(mergeDays(a, b), { arrivals: 5, pages: { '/': 2, '/nba': 3 }, from: { direct: 3, 'x.com': 2 } });
   });
+
+  it('keeps robots in a total of their own, never in the people count', () => {
+    const day = emptyDay();
+    addVisit(day, '/nba', null);
+    addRobot(day, '/nba/game/*', 'no-fetch-metadata');
+    addRobot(day, '/nba/game/*', 'named');
+    assert.equal(day.arrivals, 1);
+    assert.deepEqual(day.robots, { arrivals: 2, pages: { '/nba/game/*': 2 }, why: { 'no-fetch-metadata': 1, named: 1 } });
+    // A day written before robots were counted merges with one that has them.
+    const merged = mergeDays({ arrivals: 4, pages: { '/': 4 }, from: { direct: 4 } }, day);
+    assert.equal(merged.arrivals, 5);
+    assert.deepEqual(merged.robots, day.robots);
+    assert.deepEqual(mergeDays(day, day).robots, { arrivals: 4, pages: { '/nba/game/*': 4 }, why: { 'no-fetch-metadata': 2, named: 2 } });
+  });
 });
 
 describe('saving the counts', () => {
@@ -103,6 +130,11 @@ describe('saving the counts', () => {
       assert.deepEqual(JSON.parse(text), { arrivals: 3, pages: { '/nba': 2, '/': 1 }, from: { 'google.com': 1, direct: 2 } });
       // Only those three keys: no addresses, agents or times.
       assert.deepEqual(Object.keys(JSON.parse(text)).sort(), ['arrivals', 'from', 'pages']);
+      recordRobot('/nba/game/*', 'no-language', when);
+      await flushVisits(dir);
+      const after = JSON.parse(await readFile(path.join(dir, '2026-11-10.json'), 'utf8'));
+      assert.equal(after.arrivals, 3);
+      assert.deepEqual(after.robots, { arrivals: 1, pages: { '/nba/game/*': 1 }, why: { 'no-language': 1 } });
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

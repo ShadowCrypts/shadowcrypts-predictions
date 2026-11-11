@@ -2,8 +2,8 @@
 import { log } from './lib/log';
 import { notFoundPage } from './lib/notFoundPage';
 import { isKnownPage } from './lib/routes';
-import { countable, pageKind, referrerHost } from './lib/visits';
-import { recordVisit } from './lib/visitsStore';
+import { pageKind, referrerHost, visitor } from './lib/visits';
+import { recordRobot, recordVisit } from './lib/visitsStore';
 import { clientKey, contentSecurityPolicy, EXPENSIVE_API, isCostlyImage, LIMITS, makeNonce, RateLimiter, REPORTING_ENDPOINTS, SECURITY_HEADERS, Verdict } from './lib/security';
 
 // Runs before every request but build output and the site's fixed files:
@@ -107,13 +107,16 @@ export function proxy(request: NextRequest) {
   return withHeaders(NextResponse.next({ request: { headers: forward } }), policy, mine);
 }
 
-/** A person opening one of the site's pages: counted as a total for the day, with nothing about who they are (lib/visits.ts). */
+/** A person opening one of the site's pages: counted as a total for the day, with nothing about who they are; robots in a total of their own (lib/visits.ts). */
 function countArrival(request: NextRequest) {
   try {
     const header = (name: string) => request.headers.get(name);
-    if (!countable(request.method, header)) return;
+    const who = visitor(request.method, header);
+    if (!who) return;
+    const page = pageKind(request.nextUrl.pathname);
+    if (who !== 'person') return recordRobot(page, who);
     const siteHost = process.env.SITE_URL ? new URL(process.env.SITE_URL).host : null;
-    recordVisit(pageKind(request.nextUrl.pathname), referrerHost(header('referer'), [header('host'), header('x-forwarded-host'), siteHost]));
+    recordVisit(page, referrerHost(header('referer'), [header('host'), header('x-forwarded-host'), siteHost]));
   } catch {
     // Counting never gets in the way of a page.
   }
