@@ -2,6 +2,11 @@
 # which listens on this server only (127.0.0.1:3000). setup-server.sh puts this in /etc/caddy/Caddyfile.
 {
 	servers {
+		# Cloudflare's own addresses (setup-server.sh fills them in from cloudflare.com/ips): a request
+		# through Cloudflare keeps the visitor's address in X-Forwarded-For, and Caddy adds Cloudflare's
+		# after it. Anyone else's X-Forwarded-For is thrown away and replaced with their real address.
+		trusted_proxies static __CLOUDFLARE_RANGES__
+		client_ip_headers CF-Connecting-IP X-Forwarded-For
 		# A slow or stalled upload can't hold a connection open (the app also caps bodies itself).
 		timeouts {
 			read_header 10s

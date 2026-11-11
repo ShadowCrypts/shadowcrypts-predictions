@@ -27,7 +27,8 @@ const nextConfig: NextConfig = {
       { source: '/:path*', headers: SECURITY_HEADERS },
       { source: '/offline.html', headers: [{ key: 'Content-Security-Policy', value: OFFLINE_POLICY }] },
       // The service worker is re-checked on every visit so a fix reaches everyone.
-      { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache' }] },
+      // Spelled out rather than plain "no-cache": Cloudflare replaces a bare no-cache with its own 4-hour default.
+      { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' }] },
       // It's on every page's footer and rarely changes; a day keeps repeat visits from fetching it again.
       { source: '/signature-:size(360|720).webp', headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }] },
       { source: '/backdrop-:shape(wide|tall)-:theme(dark|light).webp', headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }] }

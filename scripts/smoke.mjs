@@ -279,7 +279,7 @@ async function main() {
   check('sitemap lists teams, players and upcoming games', urls.some((u) => /\/team\/\d+$/.test(u)) && urls.some((u) => /\/player\/\d+$/.test(u)) && urls.some((u) => /\/game\/\d+$/.test(u)), `${urls.length} urls`);
   check('sitemap rate-limited like a page', sitemap.response.headers.has('ratelimit-remaining'));
   const sw = await get('/sw.js');
-  check('/sw.js not cached', sw.response.headers.get('cache-control') === 'no-cache');
+  check('/sw.js checked fresh on every visit', /^(no-cache|public, max-age=0, must-revalidate)$/.test(sw.response.headers.get('cache-control') ?? ''));
   for (const size of [360, 720]) {
     const signature = await fetch(`${BASE}/signature-${size}.webp`);
     check(`signature image ${size} is served, typed and hardened`, signature.status === 200 && signature.headers.get('content-type') === 'image/webp' && signature.headers.get('x-content-type-options') === 'nosniff' && signature.headers.get('cache-control') === 'public, max-age=86400');

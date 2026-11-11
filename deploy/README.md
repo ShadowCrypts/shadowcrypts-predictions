@@ -35,6 +35,13 @@ this GitHub repository. Any provider works; it needs about 1 GB of memory free f
 4. Point the domain's DNS at the server (an A record for the name and for `www`), then run the setup
    again: it turns on HTTPS once the name points there.
 
+5. Optional: Cloudflare's proxy in front (the orange cloud). Set Cloudflare's SSL/TLS mode to
+   **Full (strict)** first (anything less loops on redirects), then switch both records to Proxied. The
+   setup has already told Caddy to trust Cloudflare's addresses (fetched from cloudflare.com/ips each
+   run) and set `TRUST_PROXY_HOPS=2`, so each visitor is still known by their own address; it works with
+   the proxy off too. Keep Rocket Loader and automatic Web Analytics off: anything Cloudflare injects
+   into pages is blocked by the site's Content Security Policy.
+
 ## Updating
 
 Push to GitHub, then:

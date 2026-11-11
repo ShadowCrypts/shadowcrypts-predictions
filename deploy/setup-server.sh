@@ -74,13 +74,19 @@ mkdir -p "$BASE/releases" "$BASE/shared/.cache" "$BASE/backups"
 if [ ! -f "$BASE/shared/.env" ]; then
   cat > "$BASE/shared/.env" <<EOF
 SITE_URL=https://$DOMAIN
-# Caddy is the one proxy in front: it sets X-Forwarded-For to the visitor's own address.
-TRUST_PROXY_HOPS=1
+# The visitor's address is the second from the end of X-Forwarded-For: Cloudflare's goes last. A request
+# straight to the server has only one entry (Caddy replaces anything else), and it's still picked.
+TRUST_PROXY_HOPS=2
 HOST=127.0.0.1
 PORT=3000
 VAPID_SUBJECT=https://github.com/ShadowCrypts/shadowcrypts-predictions
 SECURITY_CONTACT=https://github.com/ShadowCrypts/shadowcrypts-predictions/security/advisories/new
 EOF
+fi
+# (Servers set up before Cloudflare's proxy said 1: bring them along, and restart the site to read it.)
+if grep -q '^TRUST_PROXY_HOPS=1$' "$BASE/shared/.env"; then
+  sed -i 's/^TRUST_PROXY_HOPS=1$/TRUST_PROXY_HOPS=2/' "$BASE/shared/.env"
+  if systemctl is-active --quiet shadowcrypts; then systemctl restart shadowcrypts; fi
 fi
 chmod 640 "$BASE/shared/.env"
 chown -R "$APP:$APP" "$BASE"
@@ -105,9 +111,19 @@ here_ip="$(ip -4 route get 1.1.1.1 | awk '{for (i = 1; i < NF; i++) if ($i == "s
 # answering "no such name" for an hour after the record goes in. (No answer yet is an answer, not an error.)
 dns_ip="$(dig +short @1.1.1.1 "$DOMAIN" A 2>/dev/null | grep -E '^[0-9.]+$' | head -1 || true)"
 [ -n "$dns_ip" ] || dns_ip="$(getent ahostsv4 "$DOMAIN" 2>/dev/null | awk 'NR == 1 {print $1}' || true)"
-if [ -n "$dns_ip" ] && [ "$dns_ip" = "$here_ip" ]; then
-  sed -e "s/shadowcrypts\.com/$DOMAIN/g" "$HERE/Caddyfile" > /etc/caddy/Caddyfile
-  echo "$DOMAIN points here ($here_ip): HTTPS on."
+cf_ranges="$( { curl -fsS --max-time 15 https://www.cloudflare.com/ips-v4; echo; curl -fsS --max-time 15 https://www.cloudflare.com/ips-v6; } 2>/dev/null | grep -E '^[0-9a-f:.]+/[0-9]+$' | tr '\n' ' ' || true)"
+if [ -z "$cf_ranges" ]; then
+  # Without the list nobody's forwarded address is trusted: still safe, but behind Cloudflare every visitor would look alike.
+  cf_ranges="private_ranges"
+  echo "Couldn't fetch Cloudflare's address list; run this again before turning Cloudflare's proxy on."
+fi
+# Through Cloudflare's proxy, the name resolves to one of Cloudflare's addresses instead of this server's.
+cf_on_dns="$(python3 -c 'import ipaddress, sys
+ip = ipaddress.ip_address(sys.argv[1])
+print(int(any(ip in ipaddress.ip_network(n) for n in sys.argv[2:])))' "${dns_ip:-0.0.0.0}" $cf_ranges 2>/dev/null || echo 0)"
+if [ -n "$dns_ip" ] && { [ "$dns_ip" = "$here_ip" ] || [ "$cf_on_dns" = 1 ]; }; then
+  sed -e "s/shadowcrypts\.com/$DOMAIN/g" -e "s#__CLOUDFLARE_RANGES__#$cf_ranges#" "$HERE/Caddyfile" > /etc/caddy/Caddyfile
+  if [ "$cf_on_dns" = 1 ]; then echo "$DOMAIN goes through Cloudflare's proxy: HTTPS on, Cloudflare's addresses trusted."; else echo "$DOMAIN points here ($here_ip): HTTPS on."; fi
 else
   printf ':80 {\n\treverse_proxy 127.0.0.1:3000\n}\n' > /etc/caddy/Caddyfile
   echo "$DOMAIN doesn't point here yet (it points to: ${dns_ip:-nothing}; this server is $here_ip)."
