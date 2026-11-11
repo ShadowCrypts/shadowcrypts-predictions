@@ -2,9 +2,14 @@ import { NextResponse } from 'next/server';
 import { readCapped } from '../../../../lib/http';
 import { PUSH_LIMITS, readWatchRequest } from '../../../../lib/push';
 import { isWatched, sendFirst, upsertWatch } from '../../../../lib/push-server';
-import { fromOwnPages } from '../../../../lib/security';
+import { clientKey, fromOwnPages, proxyHops, RateLimiter } from '../../../../lib/security';
 
 export const dynamic = 'force-dynamic';
+
+const HOUR = 3_600_000;
+/** New sign-ups per address an hour, in memory only (one counter for the process, however the route is bundled). */
+const shared = globalThis as typeof globalThis & { __scNewWatches?: RateLimiter };
+const newWatches = () => (shared.__scNewWatches ??= new RateLimiter(PUSH_LIMITS.newPerHour, HOUR, 20_000));
 
 /**
  * POST /api/push/watch — a browser's push address and what it wants watched
@@ -26,6 +31,14 @@ export async function POST(request: Request) {
   const watch = readWatchRequest(body);
   if (!watch) return NextResponse.json({ error: 'Not a push subscription from a browser push service' }, { status: 422 });
   if (!(await isWatched(watch.subscription.endpoint))) {
+    // Updating a list already kept is never limited here; only browsers new to the server count.
+    const allowance = newWatches().take(clientKey(request.headers, proxyHops()));
+    if (!allowance.ok) {
+      return NextResponse.json(
+        { ok: false, error: 'Too many new alert sign-ups from this address. Try again later.' },
+        { status: 429, headers: { 'retry-after': String(allowance.resetSeconds), 'cache-control': 'no-store' } }
+      );
+    }
     const outcome = await sendFirst(watch, {
       title: 'Alerts are on',
       body: 'You’ll hear when your parlay legs hit or miss and when your teams’ games start and finish, even with the site closed.',

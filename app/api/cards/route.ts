@@ -18,5 +18,5 @@ export async function GET(request: Request) {
   const leagues = [...new Set(ids.map(([league]) => league))];
   const models = new Map(await Promise.all(leagues.map(async (id) => [id, await getLeagueModel(id)] as const)));
   const cards = ids.map(([league, id]) => models.get(league)?.predictions[id]).filter((p) => p !== undefined).map((p) => toCard(p!));
-  return json(request, { cards });
+  return json(request, { cards }, { headers: { 'cache-control': 'public, max-age=60' } });
 }

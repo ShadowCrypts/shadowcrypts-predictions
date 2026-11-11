@@ -14,9 +14,23 @@
 			idle 2m
 		}
 	}
+	# Certificates are proven over port 80 only. Behind Cloudflare, the firewall lets only Cloudflare reach
+	# port 443 (firewall.sh), so Let's Encrypt's check over 443 could never get through.
+	cert_issuer acme {
+		disable_tlsalpn_challenge
+	}
+}
+
+# Responses don't say what software the server runs ("Via: 1.1 Caddy", "Server: Caddy").
+(quiet) {
+	header {
+		-Via
+		-Server
+	}
 }
 
 shadowcrypts.com {
+	import quiet
 	request_body {
 		max_size 64KB
 	}
@@ -25,5 +39,6 @@ shadowcrypts.com {
 
 # One address for search engines: www goes to the plain one.
 www.shadowcrypts.com {
+	import quiet
 	redir https://shadowcrypts.com{uri} permanent
 }

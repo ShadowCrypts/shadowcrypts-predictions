@@ -1,10 +1,10 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { log } from './lib/log';
 import { notFoundPage } from './lib/notFoundPage';
-import { isKnownPage } from './lib/routes';
+import { isKnownApi, isKnownPage } from './lib/routes';
 import { pageKind, referrerHost, visitor } from './lib/visits';
 import { recordRobot, recordVisit } from './lib/visitsStore';
-import { clientKey, contentSecurityPolicy, EXPENSIVE_API, isCostlyImage, LIMITS, makeNonce, RateLimiter, REPORTING_ENDPOINTS, SECURITY_HEADERS, Verdict } from './lib/security';
+import { clientKey, contentSecurityPolicy, EXPENSIVE_API, isCostlyImage, LIMITS, makeNonce, proxyHops, RateLimiter, REPORTING_ENDPOINTS, SECURITY_HEADERS, Verdict } from './lib/security';
 
 // Runs before every request but build output and the site's fixed files:
 // rate limits per client, a cap for everyone on each costly endpoint, pages
@@ -21,7 +21,7 @@ const limiters = {
   pages: new RateLimiter(LIMITS.pages, MINUTE),
   prefetch: new RateLimiter(LIMITS.prefetch, MINUTE)
 };
-const hops = Math.max(0, Math.floor(Number(process.env.TRUST_PROXY_HOPS ?? 0) || 0));
+const hops = proxyHops();
 const dev = process.env.NODE_ENV === 'development';
 
 const limitHeaders = (v: Verdict) => ({ 'ratelimit-limit': String(v.limit), 'ratelimit-remaining': String(v.remaining), 'ratelimit-reset': String(v.resetSeconds) });
@@ -60,6 +60,16 @@ export function proxy(request: NextRequest) {
     } else {
       mine = limiters.api.take(who);
       if (!mine.ok) return tooMany(mine, true, 'api', request);
+    }
+    // Not an API address: a JSON 404 from here, not the app's HTML not-found page (which outside the page
+    // branch would go out without the nonce policy pages carry).
+    if (!isKnownApi(pathname)) {
+      return secured(
+        NextResponse.json(
+          { error: 'No such API address. The list is at /data.' },
+          { status: 404, headers: { ...limitHeaders(mine), 'cache-control': 'no-store', 'cross-origin-resource-policy': 'same-origin' } }
+        )
+      );
     }
     const response = NextResponse.next();
     for (const [key, value] of Object.entries(limitHeaders(mine))) response.headers.set(key, value);

@@ -59,7 +59,12 @@ export const CLUTCH = { remaining: 0.12, band: 0.3 };
 /** How far ahead of a followed team's game injury news about it is announced. */
 export const NEWS_WINDOW_MS = 48 * 3_600_000;
 
-export const PUSH_LIMITS = { parlays: 30, legs: 12, teams: 40, players: 40, label: 120, bytes: 32_768, watches: 2_000 };
+/**
+ * Caps on what one alert list holds and on the store as a whole. `newPerHour` is how many browsers new to the
+ * server one address can sign up in an hour (one person has a browser or three; more is someone trying to fill
+ * the store so the oldest lists get pushed out), counted in memory only.
+ */
+export const PUSH_LIMITS = { parlays: 30, legs: 12, teams: 40, players: 40, label: 120, bytes: 32_768, watches: 2_000, newPerHour: 10 };
 
 /** How long before the start a followed team's game is announced. */
 export const START_WINDOW_MS = 35 * 60_000;

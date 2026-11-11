@@ -1,48 +1,15 @@
-import { promisify } from 'node:util';
-import { brotliCompress, constants, gzip } from 'node:zlib';
-
-const brotli = promisify(brotliCompress);
-const gzipped = promisify(gzip);
-
-/** Below this, compressing costs more than it saves. */
-const MIN_COMPRESS_BYTES = 1024;
-
-/** The best encoding the client accepts: brotli, then gzip, else none (an encoding with q=0 is refused). */
-export function pickEncoding(accept: string | null): 'br' | 'gzip' | null {
-  const offered = new Map<string, number>();
-  for (const part of (accept ?? '').toLowerCase().split(',')) {
-    const [name, ...params] = part.trim().split(';');
-    if (!name) continue;
-    const q = params.map((p) => p.trim()).find((p) => p.startsWith('q='));
-    offered.set(name.trim(), q ? Number(q.slice(2)) || 0 : 1);
-  }
-  const ok = (name: string) => (offered.get(name) ?? offered.get('*') ?? 0) > 0;
-  if (ok('br')) return 'br';
-  if (ok('gzip')) return 'gzip';
-  return null;
-}
-
 /**
- * A text response, compressed when the client accepts it. Next.js compresses
- * pages but sends route handlers' bodies as they are, so without this the API
- * (the live board polled every 15 seconds, the player list for search) goes out
- * at full size.
+ * A text response from a route handler. Compressing it is left to Next.js: since 16.4.5 it drops a route
+ * handler's own Content-Encoding (part of a security fix for forwarded responses), and since 16.4.6 it gzips
+ * route handlers' answers itself, so a body compressed here would go out compressed twice under one label,
+ * unreadable. (Until then the API compressed its own answers with brotli, as Next.js left them at full size.)
+ * The request stays in the signature for the routes that call it.
  */
-export async function send(request: Request, body: string, init: ResponseInit = {}): Promise<Response> {
-  const headers = new Headers(init.headers);
-  headers.append('vary', 'accept-encoding');
-  const size = Buffer.byteLength(body);
-  const encoding = size >= MIN_COMPRESS_BYTES ? pickEncoding(request.headers.get('accept-encoding')) : null;
-  if (!encoding) return new Response(body, { ...init, headers });
-  const packed =
-    encoding === 'br'
-      ? await brotli(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 5, [constants.BROTLI_PARAM_SIZE_HINT]: size } })
-      : await gzipped(body, { level: 6 });
-  headers.set('content-encoding', encoding);
-  return new Response(new Uint8Array(packed), { ...init, headers });
+export async function send(_request: Request, body: string, init: ResponseInit = {}): Promise<Response> {
+  return new Response(body, { ...init, headers: new Headers(init.headers) });
 }
 
-/** JSON, compressed when the client accepts it (see `send`). */
+/** JSON (see `send`). */
 export function json(request: Request, data: unknown, init: ResponseInit = {}) {
   const headers = new Headers(init.headers);
   headers.set('content-type', 'application/json');

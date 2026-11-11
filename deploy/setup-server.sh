@@ -6,8 +6,9 @@
 # for builds; installs Node.js 24 (the official build, checksum checked) and Caddy (the web server that
 # handles HTTPS, from Caddy's own repository); makes a "shadowcrypts" user that runs the site with no admin
 # rights; lays out /srv/shadowcrypts; installs the `update-site` command, the service that keeps the site
-# running and the nightly backup; opens only SSH, HTTP and HTTPS in the firewall; and turns off password
-# logins over SSH (keys only). It's safe to run again: each step checks what's already done.
+# running and the nightly backup; opens only SSH, HTTP and HTTPS in the firewall (HTTPS only from Cloudflare
+# while the domain goes through its proxy, see firewall.sh); and turns off password logins over SSH (keys
+# only). It's safe to run again: each step checks what's already done.
 #
 # It doesn't put the site itself up: run `update-site` after it for that.
 set -euo pipefail
@@ -132,12 +133,18 @@ fi
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
 systemctl reload caddy || systemctl restart caddy
 
-step "Firewall: only SSH, HTTP and HTTPS"
+step "Firewall: only SSH, HTTP and HTTPS (HTTPS only from Cloudflare while the domain goes through it)"
 ufw allow OpenSSH >/dev/null
 ufw allow 80/tcp >/dev/null
-ufw allow 443/tcp >/dev/null
 ufw --force enable >/dev/null
-ufw status | sed -n '1,12p'
+sed -e "s#__DOMAIN__#$DOMAIN#" "$HERE/firewall.sh" > /usr/local/sbin/shadowcrypts-firewall
+chmod 755 /usr/local/sbin/shadowcrypts-firewall
+/usr/local/sbin/shadowcrypts-firewall
+# Every 10 minutes: follows the domain on or off Cloudflare's proxy, and Cloudflare's list of addresses.
+cat > /etc/cron.d/shadowcrypts-firewall <<'EOF'
+*/10 * * * * root /usr/local/sbin/shadowcrypts-firewall >/dev/null 2>&1
+EOF
+echo "$(ufw status | head -1). SSH and port 80 open to all; port 443 $(if ufw status | grep -qE '^443/tcp +ALLOW +Anywhere'; then echo 'open to all'; else echo "only from Cloudflare ($(ufw status | grep -c '# cloudflare$') rules)"; fi)."
 
 step "SSH: keys only, no passwords"
 cat > /etc/ssh/sshd_config.d/10-shadowcrypts.conf <<'EOF'

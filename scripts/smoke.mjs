@@ -14,7 +14,7 @@ const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: !!ok, detail });
 
 const HEADERS = {
-  'strict-transport-security': /max-age=\d{7,}/,
+  'strict-transport-security': /^max-age=\d{8,}; includeSubDomains; preload$/,
   'x-content-type-options': /^nosniff$/,
   'x-frame-options': /^DENY$/,
   'referrer-policy': /^strict-origin-when-cross-origin$/,
@@ -174,6 +174,20 @@ async function main() {
     const body = await page(path, { status: 404 });
     check(`${path} not-found page rendered on the server`, body.includes('Nothing in this crypt'));
   }
+  // API addresses that don't exist: a JSON 404, never the HTML app.
+  for (const path of ['/api/nope', '/api/predictions/extra', '/api/.env']) {
+    const { response, body } = await get(path);
+    let parsed = null;
+    try {
+      parsed = JSON.parse(body);
+    } catch {}
+    check(`${path} → JSON 404`, response.status === 404 && /json/.test(response.headers.get('content-type') ?? '') && typeof parsed?.error === 'string', `got ${response.status} ${response.headers.get('content-type')}`);
+    check(`${path} 404 not kept`, response.headers.get('cache-control') === 'no-store');
+  }
+  for (const path of ['/api/predictions?league=nba', '/api/rankings?league=nba', '/api/record?league=nba', '/api/cards?ids=nba:1', '/api/health']) {
+    const { response } = await get(path);
+    check(`${path} says how long to keep it`, /^(public, max-age=\d+|no-store)$/.test(response.headers.get('cache-control') ?? ''), response.headers.get('cache-control') ?? 'missing');
+  }
   // Pages are only read: other methods are refused before the app runs.
   for (const method of ['POST', 'PUT', 'DELETE']) {
     const { response } = await get('/', { method, body: method === 'DELETE' ? undefined : 'x' });
@@ -192,11 +206,16 @@ async function main() {
   const calendar = await get('/api/calendar?teams=nba:13');
   check('calendar feed is never kept by shared caches', (calendar.response.headers.get('cache-control') ?? '').startsWith('private'));
 
-  // Search's player list, and API answers compressed (Next.js only compresses pages by itself).
+  // Search's player list, and API answers compressed once, by Next.js (a route that compresses its own gets
+  // compressed again on top since 16.4.6, under one label: unreadable).
   const players = await get('/api/players', { headers: { 'accept-encoding': 'br, gzip' } });
-  const list = JSON.parse(players.body).players ?? [];
+  let list = [];
+  try {
+    list = JSON.parse(players.body).players ?? [];
+  } catch {}
+  check('/api/players reads as JSON once decompressed', list.length > 0, players.body.slice(0, 20));
   check('/api/players lists players with pages', players.response.status === 200 && list.length > 0 && list.every((p) => p.league && /^\d+$/.test(p.id) && p.name), `${list.length} players`);
-  check('/api/players brotli-compressed', players.response.headers.get('content-encoding') === 'br', players.response.headers.get('content-encoding') ?? 'none');
+  check('/api/players compressed', players.response.headers.get('content-encoding') === 'gzip', players.response.headers.get('content-encoding') ?? 'none');
   if (list[0]) {
     const top = list[0];
     const { response, body } = await get(`/${top.league}/player/${top.id}`);
@@ -234,7 +253,7 @@ async function main() {
   );
   check('prop picks CSV refuses a league without props', (await get('/api/graded-props?league=mlb')).response.status === 400);
   const gz = await get('/api/predictions', { headers: { 'accept-encoding': 'gzip' } });
-  check('/api/predictions gzip when brotli isn’t offered', gz.response.headers.get('content-encoding') === 'gzip' && /accept-encoding/i.test(gz.response.headers.get('vary') ?? ''));
+  check('/api/predictions gzip-compressed', gz.response.headers.get('content-encoding') === 'gzip' && /accept-encoding/i.test(gz.response.headers.get('vary') ?? ''));
   const raw = await get('/api/predictions', { headers: { 'accept-encoding': 'identity' } });
   check('/api/predictions plain when nothing is accepted', !raw.response.headers.has('content-encoding') && JSON.parse(raw.body).leagues?.length === 4);
 

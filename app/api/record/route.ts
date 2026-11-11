@@ -13,5 +13,5 @@ export async function GET(request: Request) {
   return json(request, {
     generatedAt: new Date().toISOString(),
     leagues: models.map((m) => ({ league: m.league, season: m.season, record: m.record }))
-  });
+  }, { headers: { 'cache-control': 'public, max-age=300' } });
 }

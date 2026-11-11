@@ -42,6 +42,11 @@ this GitHub repository. Any provider works; it needs about 1 GB of memory free f
    the proxy off too. Keep Rocket Loader and automatic Web Analytics off: anything Cloudflare injects
    into pages is blocked by the site's Content Security Policy.
 
+   With the proxy on, the firewall lets only Cloudflare's addresses reach port 443, so nobody can get
+   around Cloudflare by using the server's own address (`firewall.sh`, run every 10 minutes). Port 80
+   stays open for Let's Encrypt's certificate checks and redirects to HTTPS. Turning the proxy off again
+   (grey cloud) is fine: within 10 minutes the firewall notices and opens 443 to everyone.
+
 ## Updating
 
 Push to GitHub, then:
@@ -63,6 +68,7 @@ are kept in `/srv/shadowcrypts/releases`.
 | Settings (SITE_URL, keys) | `/srv/shadowcrypts/shared/.env` |
 | Nightly backups of the records | `/srv/shadowcrypts/backups` (30 days) |
 | Logs | `journalctl -u shadowcrypts -f`, and the last build in `/var/log/shadowcrypts-build.log` |
+| Firewall | `ufw status`; port 443 follows the domain on or off Cloudflare (`shadowcrypts-firewall`) |
 | Visitor counts | `cd /srv/shadowcrypts/current && npm run visits` |
 
 The backups are on the same server, so they guard against mistakes, not against losing the server: copy

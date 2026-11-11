@@ -54,7 +54,9 @@ export const OFFLINE_POLICY = "default-src 'none'; style-src 'unsafe-inline'; im
  * isn't shared with pages that open it or that it opens.
  */
 export const SECURITY_HEADERS: { key: string; value: string }[] = [
-  { key: 'Strict-Transport-Security', value: 'max-age=31536000' },
+  // HTTPS only for a year, for every name under the domain too (all of them are HTTPS: the site and www's
+  // redirect), and eligible for browsers' built-in HTTPS-only list (hstspreload.org).
+  { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -86,6 +88,9 @@ export function makeNonce() {
  * a client can pose as many; the global caps below hold however many it
  * claims to be.
  */
+/** TRUST_PROXY_HOPS as a whole number (0 when unset or nonsense). */
+export const proxyHops = () => Math.max(0, Math.floor(Number(process.env.TRUST_PROXY_HOPS ?? 0) || 0));
+
 export function clientKey(headers: Headers, trustHops = 0) {
   const chain = (headers.get('x-forwarded-for') ?? '')
     .split(',')

@@ -25,5 +25,5 @@ export async function GET(request: Request) {
         seasonChange: Math.round(r.seasonChange * 10) / 10
       }))
     }))
-  });
+  }, { headers: { 'cache-control': 'public, max-age=300' } });
 }

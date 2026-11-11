@@ -13,8 +13,8 @@ A self-hosted Next.js 16 app: no accounts, no passwords, no payments, no cookies
 ## Protections
 
 - **Content Security Policy** with a fresh nonce per page: only this site's scripts run, images only from here and ESPN's image service, connections only to this site, no framing, no plugins. Violations are reported to `/api/csp-report` and logged.
-- **Headers on every response**, including those the proxy answers itself: HSTS, `nosniff`, `X-Frame-Options: DENY`, strict referrer policy, a Permissions-Policy that turns off hardware and payment features, `Cross-Origin-Opener-Policy`, no `X-Powered-By`.
-- **One gate for every request** (`proxy.ts`), build output and the fixed public files (service worker, offline page, robots.txt, manifest) aside: per-client rate limits (pages, router prefetches, API, costly endpoints and images drawn on request), a cap per costly endpoint for everyone together, pages by GET/HEAD only, and a 404 of the proxy's own for any address that can't be a page, before the app runs.
+- **Headers on every response**, including those the proxy answers itself: HSTS (with subdomains, preload-ready), `nosniff`, `X-Frame-Options: DENY`, strict referrer policy, a Permissions-Policy that turns off hardware and payment features, `Cross-Origin-Opener-Policy`, no `X-Powered-By`.
+- **One gate for every request** (`proxy.ts`), build output and the fixed public files (service worker, offline page, robots.txt, manifest) aside: per-client rate limits (pages, router prefetches, API, costly endpoints and images drawn on request), a cap per costly endpoint for everyone together, pages by GET/HEAD only, and a 404 of the proxy's own for any address that can't be a page (JSON under `/api/`), before the app runs.
 - **Input**: ids in URLs match strict patterns, lists are capped, request bodies are read only up to a small cap (and Next.js keeps at most 64 KB of any body), JSON endpoints take JSON from the site's own pages only, and push alerts go only to the browsers' own push services. Nothing a link or request says is reflected into a page.
 - **Secrets**: the VAPID key that signs alerts lives in `.cache/` (owner-only on Unix), or in `VAPID_PRIVATE_KEY`; `.cache/` and every `.env` file are kept out of git and Docker images.
 - **Network**: `npm run start`, `npm run serve` and `npm run dev` listen on 127.0.0.1 only; Docker publishes on 127.0.0.1 unless `WEB_BIND` says otherwise.
@@ -30,6 +30,20 @@ A self-hosted Next.js 16 app: no accounts, no passwords, no payments, no cookies
 5. Run `npm audit` before each deploy.
 
 ## Audit log
+
+**2026-11-11, outside review of the live site.** Found and fixed:
+
+| Finding | Severity | Fix |
+| --- | --- | --- |
+| Next.js 16.4.3 was in the range of seven advisories fixed in 16.4.5 (Nov 3), which `npm audit` didn't list yet. None reached this site: it has no `use cache` or `unstable_cache`, no Edge routes and image optimization off, and returns no fetched response as it is | Medium | Next.js 16.4.6 |
+| Cloudflare's protection could be skipped by using the server's own address, which was public in DNS before the proxy went on | Medium | While the domain is proxied, the firewall lets only Cloudflare reach port 443, rechecked every 10 minutes (`deploy/firewall.sh`) |
+| One address could sign up alert lists from many browsers until the store's 2,000 cap pushed the oldest real ones out (each sign-up must already be a working push subscription for this site's key) | Low | At most 10 browsers new to the server per address an hour, counted in memory only |
+| Unknown `/api/` addresses got the app's HTML not-found page, without the nonce policy pages carry | Low | A JSON 404 from the proxy (`isKnownApi`, kept in step with `app/api` by a test) |
+| HSTS without `includeSubDomains` or `preload` | Low | Both added (every name under the domain is HTTPS) |
+| `Via: 1.1 Caddy` and `Server: Caddy` named the origin's web server | Info | Removed in the Caddyfile |
+| Some API answers had no `Cache-Control` | Info | Each says how long it can be kept |
+
+Confirmed already in place: alerts go only to the browsers' own push services (`https:` and a fixed list of hosts, no ports or credentials in the address), so a sign-up can't point the server at an internal address.
 
 **2026-10-28, full audit.** Found and fixed:
 

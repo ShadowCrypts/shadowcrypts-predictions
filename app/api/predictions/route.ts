@@ -20,5 +20,5 @@ export async function GET(request: Request) {
       season: model.season,
       predictions: slates[i].map(predictionJson)
     }))
-  });
+  }, { headers: { 'cache-control': 'public, max-age=15' } });
 }

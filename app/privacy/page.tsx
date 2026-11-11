@@ -72,7 +72,7 @@ export default function PrivacyPage() {
         <Facts
           items={[
             'Errors, content your browser blocked for safety and reported to us, and requests turned away for coming too fast are logged one line each, without IP addresses, identifying headers or the details in a page’s address.',
-            'To stop floods, the server counts requests per address for a minute, in memory only, and keeps nothing.',
+            'To stop floods, the server counts requests per address for a minute (new alert sign-ups for an hour), in memory only, and keeps nothing.',
             'The company that hosts the server may keep its own access logs, under its own policy.'
           ]}
         />

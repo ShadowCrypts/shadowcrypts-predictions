@@ -2,7 +2,16 @@ import assert from 'node:assert/strict';
 import { readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { isKnownPage } from '../lib/routes';
+import { isKnownApi, isKnownPage } from '../lib/routes';
+
+/** Every API address in app/api, from its route.ts files. */
+function apis(dir = path.join(process.cwd(), 'app', 'api'), prefix = '/api'): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const full = path.join(dir, name);
+    if (statSync(full).isDirectory()) return apis(full, `${prefix}/${name}`);
+    return /^route\.tsx?$/.test(name) ? [prefix] : [];
+  });
+}
 
 /** Every page and image route in app/, as a sample address (dynamic segments filled with real-looking values). */
 function routes(dir = path.join(process.cwd(), 'app'), prefix = ''): string[] {
@@ -32,5 +41,18 @@ describe('known page addresses', () => {
       assert.equal(isKnownPage(junk), false, junk);
     // Build output, dev tooling, the API and well-known files are never the proxy's to refuse.
     for (const pass of ['/', '/_next/webpack-hmr', '/__nextjs_original-stack-frames', '/api/anything', '/.well-known/security.txt']) assert.equal(isKnownPage(pass), true, pass);
+  });
+});
+
+describe('known API addresses', () => {
+  it('include every route in app/api', () => {
+    const all = apis();
+    assert.ok(all.length >= 15, `found ${all.length} API routes`);
+    for (const route of all) assert.ok(isKnownApi(route), `${route} should be a known API address`);
+  });
+
+  it('leave everything else to a JSON 404', () => {
+    for (const junk of ['/api/', '/api/anything', '/api/predictions/extra', '/api/push', '/api/.env', '/api/../etc/passwd']) assert.equal(isKnownApi(junk), false, junk);
+    assert.equal(isKnownApi('/api/predictions/'), true);
   });
 });

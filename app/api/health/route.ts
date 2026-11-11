@@ -17,5 +17,5 @@ export async function GET() {
     // Reported below; the site still serves, it just can't keep its ledger.
   }
   const history = await historyNow();
-  return NextResponse.json({ ok: true, cacheWritable: writable, uptimeSeconds: Math.round(process.uptime()), history: { share: Number(history.share.toFixed(3)), loading: history.loading, forecastsSettled: history.forecastsSettled, kinds: history.kinds }, time: new Date().toISOString() });
+  return NextResponse.json({ ok: true, cacheWritable: writable, uptimeSeconds: Math.round(process.uptime()), history: { share: Number(history.share.toFixed(3)), loading: history.loading, forecastsSettled: history.forecastsSettled, kinds: history.kinds }, time: new Date().toISOString() }, { headers: { 'cache-control': 'no-store' } });
 }
