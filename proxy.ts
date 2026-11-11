@@ -2,6 +2,8 @@
 import { log } from './lib/log';
 import { notFoundPage } from './lib/notFoundPage';
 import { isKnownPage } from './lib/routes';
+import { countable, pageKind, referrerHost } from './lib/visits';
+import { recordVisit } from './lib/visitsStore';
 import { clientKey, contentSecurityPolicy, EXPENSIVE_API, isCostlyImage, LIMITS, makeNonce, RateLimiter, REPORTING_ENDPOINTS, SECURITY_HEADERS, Verdict } from './lib/security';
 
 // Runs before every request but build output and the site's fixed files:
@@ -98,10 +100,23 @@ export function proxy(request: NextRequest) {
   if (!isKnownPage(pathname)) {
     return withHeaders(new NextResponse(notFoundPage(nonce), { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } }), policy, mine);
   }
+  countArrival(request);
   const forward = new Headers(request.headers);
   forward.set('x-nonce', nonce);
   forward.set('content-security-policy', policy);
   return withHeaders(NextResponse.next({ request: { headers: forward } }), policy, mine);
+}
+
+/** A person opening one of the site's pages: counted as a total for the day, with nothing about who they are (lib/visits.ts). */
+function countArrival(request: NextRequest) {
+  try {
+    const header = (name: string) => request.headers.get(name);
+    if (!countable(request.method, header)) return;
+    const siteHost = process.env.SITE_URL ? new URL(process.env.SITE_URL).host : null;
+    recordVisit(pageKind(request.nextUrl.pathname), referrerHost(header('referer'), [header('host'), header('x-forwarded-host'), siteHost]));
+  } catch {
+    // Counting never gets in the way of a page.
+  }
 }
 
 /** Every response the proxy answers itself carries the site's security headers too (next.config.ts adds them to the app's). */

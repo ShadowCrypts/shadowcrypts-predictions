@@ -15,8 +15,8 @@ const LINKS: { href: string; label: string; short?: string; wideOnly?: boolean; 
   { href: '/nhl', label: 'NHL' },
   { href: '/props', label: 'Props' },
   { href: '/matchup', label: 'Matchup', wideOnly: true },
-  { href: '/record', label: 'Track record', short: 'Record' },
-  { href: '/plans', label: 'Plans', wideOnly: true }
+  { href: '/record', label: 'Track record', short: 'Record' }
+  // Plans is hidden until billing exists: the page still works at /plans, but isn't linked or indexed.
 ];
 
 function useIsActive() {

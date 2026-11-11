@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { PageHeader } from '../components/Section';
 
-export const metadata: Metadata = { title: 'Plans', description: 'ShadowCrypts Predictions plans. Every plan gets the same model.' };
+// Hidden until billing exists: not linked from the site and kept out of search engines. To bring it back, drop the robots
+// line here and add /plans to the header (Nav.tsx), the footer, search (Search.tsx) and the sitemap again.
+export const metadata: Metadata = { title: 'Plans', description: 'ShadowCrypts Predictions plans. Every plan gets the same model.', robots: { index: false, follow: true } };
 
 const TIERS = [
   {

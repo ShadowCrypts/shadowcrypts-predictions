@@ -65,7 +65,7 @@ const PAGES: Item[] = [
   { key: 'p-machine-nhl', href: '/nhl/playoffs', title: 'NHL playoff machine', detail: 'Pick winners and watch every team\'s playoff chances change' },
   { key: 'p-compare', href: '/nba/compare', title: 'Compare players', detail: 'Any two players side by side: projections, lines and recent form' },
   { key: 'p-record', href: '/record', title: 'Track record', detail: 'Every graded forecast and how the model works' },
-  { key: 'p-plans', href: '/plans', title: 'Plans', detail: 'What each plan includes' }
+  { key: 'p-privacy', href: '/privacy', title: 'Privacy', detail: 'What the site keeps about you (almost nothing)' }
 ];
 
 export function Search() {

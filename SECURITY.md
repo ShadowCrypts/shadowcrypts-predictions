@@ -8,7 +8,7 @@ If you find a vulnerability in the code, report it privately through GitHub: thi
 
 ## What the site is
 
-A self-hosted Next.js 16 app: no accounts, no passwords, no payments, no cookies, no forms or server actions. Everything a visitor saves (parlays, picks, followed teams, settings) stays in their own browser, except what they choose to send for background alerts: a browser push address and the parlays and teams to watch. Data comes from ESPN's public feeds.
+A self-hosted Next.js 16 app: no accounts, no passwords, no payments, no cookies, no forms or server actions. Everything a visitor saves (parlays, picks, followed teams, settings) stays in their own browser, except what they choose to send for background alerts: a browser push address and the parlays and teams to watch. The server also keeps daily visit totals (no IP addresses, cookies or fingerprints). The site's `/privacy` page lists all of it in plain words. Data comes from ESPN's public feeds.
 
 ## Protections
 

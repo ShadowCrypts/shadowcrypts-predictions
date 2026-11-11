@@ -61,7 +61,7 @@ async function main() {
   check('/api/* same-origin resource policy', nba.response.headers.get('cross-origin-resource-policy') === 'same-origin');
   const game = JSON.parse(nba.body).leagues?.[0]?.predictions?.[0];
 
-  for (const path of ['/', '/live', '/nfl', '/nba', '/mlb', '/nhl', '/props?league=nfl', '/parlay', '/record', '/matchup', '/results', '/picks', '/plans', '/data', '/nba/players', '/nfl/players', '/nba/player/3112335', '/nfl/team/6']) {
+  for (const path of ['/', '/live', '/nfl', '/nba', '/mlb', '/nhl', '/props?league=nfl', '/parlay', '/record', '/matchup', '/results', '/picks', '/plans', '/data', '/privacy', '/nba/players', '/nfl/players', '/nba/player/3112335', '/nfl/team/6']) {
     await page(path);
   }
   if (game) {
@@ -290,6 +290,13 @@ async function main() {
     check(`backdrop ${name} is served, typed and hardened`, backdrop.status === 200 && backdrop.headers.get('content-type') === 'image/webp' && backdrop.headers.get('x-content-type-options') === 'nosniff' && backdrop.headers.get('cache-control') === 'public, max-age=86400');
   }
   check('only the real backdrops are files', (await fetch(`${BASE}/backdrop-wide-blue.webp`)).status === 404);
+  // Plans stays reachable but hidden until billing exists; privacy is linked from every page.
+  const front = await get('/');
+  check('plans page not linked from the site', !front.body.includes('href="/plans"'));
+  check('privacy page linked from every page', front.body.includes('href="/privacy"'));
+  check('plans page kept out of search engines', /<meta name="robots" content="noindex/.test((await get('/plans')).body));
+  const map = await (await fetch(`${BASE}/sitemap.xml`)).text();
+  check('sitemap lists the privacy page and not the plans page', map.includes('/privacy</loc>') && !map.includes('/plans</loc>'));
   const offline = await get('/offline.html');
   check('/offline.html locked-down CSP', (offline.response.headers.get('content-security-policy') ?? '').startsWith("default-src 'none'"));
   if (!process.env.SECURITY_CONTACT) check('security.txt absent without a contact', (await get('/.well-known/security.txt')).response.status === 404);

@@ -35,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...(['nfl', 'nba', 'nhl', 'mlb'] as const).map((id) => ({ url: `${url}/${id}/playoffs`, changeFrequency: 'daily' as const, priority: 0.7 })),
     ...(['nfl', 'nba', 'nhl', 'mlb'] as const).map((id) => ({ url: `${url}/${id}/injuries`, changeFrequency: 'daily' as const, priority: 0.7 })),
     ...(['nfl', 'nba', 'nhl', 'mlb'] as const).map((id) => ({ url: `${url}/${id}/standings`, changeFrequency: 'daily' as const, priority: 0.8 })),
-    { url: `${url}/plans`, changeFrequency: 'monthly', priority: 0.3 },
+    { url: `${url}/privacy`, changeFrequency: 'monthly', priority: 0.3 },
     ...LEAGUE_IDS.map((id) => ({ url: `${url}/${id}`, lastModified: now, changeFrequency: 'hourly' as const, priority: 0.9 }))
   ];
   const teams = await Promise.all(LEAGUE_IDS.map((id) => getTeams(LEAGUES[id]).catch(() => [])));

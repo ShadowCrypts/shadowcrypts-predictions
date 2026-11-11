@@ -31,8 +31,7 @@ const COLUMNS = [
       { href: '/nba/players', label: 'NBA player ratings' },
       { href: '/nfl/players', label: 'NFL quarterback ratings' },
       { href: '/nhl/players', label: 'NHL players' },
-      { href: '/record#methodology', label: 'How it works' },
-      { href: '/plans', label: 'Plans' }
+      { href: '/record#methodology', label: 'How it works' }
     ]
   },
   {
@@ -82,7 +81,12 @@ export function Footer() {
       </div>
       <div className="border-t border-line">
         <div className="mx-auto flex max-w-7xl items-end justify-between gap-4 px-4 py-4 sm:px-6">
-          <p className="text-xs text-ink-3">© {new Date().getFullYear()} {BRAND.name}</p>
+          <p className="text-xs text-ink-3">
+            © {new Date().getFullYear()} {BRAND.name} ·{' '}
+            <Link href="/privacy" className="underline underline-offset-2 transition hover:text-ink">
+              Privacy
+            </Link>
+          </p>
           <Signature className="h-auto w-32 shrink-0 rounded-lg ring-1 ring-line sm:w-40" />
         </div>
       </div>

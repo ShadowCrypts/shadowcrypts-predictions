@@ -103,6 +103,12 @@ npm run datacheck    # with the server running: the numbers against ESPN's feeds
 npm run audit        # with the server running: Lighthouse on phone and desktop
 ```
 
+```bash
+npm run visits       # on the server: daily arrivals, where they landed and which sites sent them
+```
+
+The visit counts are totals only: no IP addresses, cookies or fingerprints. The site's `/privacy` page says exactly what's kept.
+
 The backtests behind every number on the site are in `scripts/` (`npm run backtest`, with `-- --props`, `-- --fantasy`, `-- --correlations` and more). [docs/OPERATIONS.md](docs/OPERATIONS.md) lists every script, plus hosting and what to back up.
 
 ## Project layout
@@ -130,7 +136,7 @@ assets/, brand/   the ShadowCrypt artwork (not under the code's license)
 - **Nobody reliably beats closing lines with public data**, and this doesn't either: expect roughly 65–70% in football and basketball and 55–60% in baseball and hockey. Forecasts are for insight and entertainment, **not betting advice**. If you bet, set limits; help is at 1-800-GAMBLER.
 - **Data**: the site reads ESPN's public site feeds, which are undocumented and can change without notice. This project isn't affiliated with ESPN or any league, and anyone running it is responsible for using those feeds within ESPN's terms. Team names, logos, player photos and statistics belong to their owners and are loaded while the site runs; none are in this repository.
 - **Forward records live on the host.** Locked forecasts and logged picks exist only by having been saved before each game, so a new copy starts those records from nothing.
-- The plans page is a design preview; no billing is wired up. The Docker files haven't been test-built.
+- A plans page exists at `/plans` but is hidden (not linked, kept out of search engines) until billing exists. The Docker files haven't been test-built.
 
 ## License
 

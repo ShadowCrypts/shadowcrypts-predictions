@@ -48,6 +48,7 @@ async function pages() {
     '/nfl/fantasy',
     '/nfl/injuries',
     '/nhl/standings',
+    '/privacy',
     '/props?league=nfl',
     '/parlay',
     '/picks',
