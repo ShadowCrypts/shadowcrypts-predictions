@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { BRAND } from '../../../lib/brand';
 import { InstallApp } from '../InstallApp';
+import { FeedbackButton } from './FeedbackButton';
 import { LogoMark } from './Logo';
 import { Signature } from './Signature';
 
@@ -60,7 +61,11 @@ export function Footer() {
             limits. Help is available at 1-800-GAMBLER.
           </p>
           <p className="mt-3 text-xs text-ink-3">Schedules, scores, injuries and lines from ESPN&apos;s public feeds. Not affiliated with any league.</p>
-          <div className="mt-4">
+          <div className="mt-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <FeedbackButton />
+              <span className="text-xs text-ink-3">An idea, a bug, a number that looks off? Every message gets read.</span>
+            </div>
             <InstallApp />
           </div>
         </div>
@@ -85,6 +90,10 @@ export function Footer() {
             © {new Date().getFullYear()} {BRAND.name} ·{' '}
             <Link href="/privacy" className="underline underline-offset-2 transition hover:text-ink">
               Privacy
+            </Link>{' '}
+            ·{' '}
+            <Link href="/feedback" className="underline underline-offset-2 transition hover:text-ink">
+              Feedback
             </Link>
           </p>
           <Signature className="h-auto w-32 shrink-0 rounded-lg ring-1 ring-line sm:w-40" />

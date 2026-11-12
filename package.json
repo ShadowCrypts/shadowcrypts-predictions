@@ -27,7 +27,8 @@
     "refresh": "tsx scripts/refresh.ts",
     "backtest": "tsx scripts/backtest.ts",
     "audit": "node scripts/audit.mjs",
-    "visits": "node scripts/visits.mjs"
+    "visits": "node scripts/visits.mjs",
+    "feedback": "node scripts/feedback.mjs"
   },
   "dependencies": {
     "lucide-react": "0.545.0",

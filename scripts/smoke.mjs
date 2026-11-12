@@ -61,7 +61,7 @@ async function main() {
   check('/api/* same-origin resource policy', nba.response.headers.get('cross-origin-resource-policy') === 'same-origin');
   const game = JSON.parse(nba.body).leagues?.[0]?.predictions?.[0];
 
-  for (const path of ['/', '/live', '/nfl', '/nba', '/mlb', '/nhl', '/props?league=nfl', '/parlay', '/record', '/matchup', '/results', '/picks', '/plans', '/data', '/privacy', '/nba/players', '/nfl/players', '/nba/player/3112335', '/nfl/team/6']) {
+  for (const path of ['/', '/live', '/nfl', '/nba', '/mlb', '/nhl', '/props?league=nfl', '/parlay', '/record', '/matchup', '/results', '/picks', '/plans', '/data', '/privacy', '/feedback', '/nba/players', '/nfl/players', '/nba/player/3112335', '/nfl/team/6']) {
     await page(path);
   }
   if (game) {
@@ -187,6 +187,25 @@ async function main() {
   for (const path of ['/api/predictions?league=nba', '/api/rankings?league=nba', '/api/record?league=nba', '/api/cards?ids=nba:1', '/api/health']) {
     const { response } = await get(path);
     check(`${path} says how long to keep it`, /^(public, max-age=\d+|no-store)$/.test(response.headers.get('cache-control') ?? ''), response.headers.get('cache-control') ?? 'missing');
+  }
+  // Feedback: refusals only, so a run against the live site never leaves a message behind (the trap answers
+  // "ok" and keeps nothing).
+  {
+    const send = (body, type = 'application/json') => get('/api/feedback', { method: 'POST', headers: { 'content-type': type }, body });
+    const good = { kind: 'idea', message: 'Smoke test', page: '/nba', website: '', elapsedMs: 5_000 };
+    check('feedback refuses anything but JSON', (await send('message=hi', 'application/x-www-form-urlencoded')).response.status === 415);
+    check('feedback refuses broken JSON', (await send('{')).response.status === 400);
+    const empty = await send(JSON.stringify({ ...good, message: ' ' }));
+    check('feedback refuses an empty message, saying why', empty.response.status === 422 && /few words/.test(JSON.parse(empty.body).error ?? ''));
+    check('feedback refuses a form sent instantly', (await send(JSON.stringify({ ...good, elapsedMs: 10 }))).response.status === 422);
+    check('feedback trap answers ok', (await send(JSON.stringify({ ...good, website: 'spam' }))).response.status === 201);
+    check('feedback not taken by GET', (await get('/api/feedback')).response.status === 405);
+    const form = (await get('/feedback?from=/nba/game/401909960')).body;
+    const shown = (body) => body.replace(/<!-- -->/g, '').match(/Sent along with it: you came from ([^,<]*)/)?.[1] ?? null;
+    check('feedback page notes where it was opened', shown(form) === '/nba/game/401909960', shown(form) ?? 'nothing');
+    // (The address itself is in Next.js's own router data either way; what matters is it's never taken as the page.)
+    check('feedback page ignores a page that isn’t ours', shown((await get('/feedback?from=https://evil.example/')).body) === null);
+    check('feedback page is noindex', /<meta name="robots" content="noindex/.test(form));
   }
   // Pages are only read: other methods are refused before the app runs.
   for (const method of ['POST', 'PUT', 'DELETE']) {

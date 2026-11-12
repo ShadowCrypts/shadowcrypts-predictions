@@ -70,6 +70,7 @@ are kept in `/srv/shadowcrypts/releases`.
 | Logs | `journalctl -u shadowcrypts -f`, and the last build in `/var/log/shadowcrypts-build.log` |
 | Firewall | `ufw status`; port 443 follows the domain on or off Cloudflare (`shadowcrypts-firewall`) |
 | Visitor counts | `cd /srv/shadowcrypts/current && npm run visits` |
+| Feedback messages | `cd /srv/shadowcrypts/current && npm run feedback` (kept in `shared/.cache/feedback`, in the nightly backup) |
 
 The backups are on the same server, so they guard against mistakes, not against losing the server: copy
 them somewhere else now and then.

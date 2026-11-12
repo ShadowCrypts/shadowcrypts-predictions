@@ -159,7 +159,7 @@ export function fromOwnPages(headers: Headers, siteUrl = process.env.SITE_URL) {
  * writing to disk, sending push alerts, logging): tighter limits per client,
  * plus a cap per endpoint for everyone together.
  */
-export const EXPENSIVE_API = ['/api/legs', '/api/sweat', '/api/cards', '/api/calendar', '/api/push/watch', '/api/push/unwatch', '/api/csp-report'];
+export const EXPENSIVE_API = ['/api/legs', '/api/sweat', '/api/cards', '/api/calendar', '/api/push/watch', '/api/push/unwatch', '/api/csp-report', '/api/feedback'];
 
 /** Images drawn on request (share previews, app icons in any size): the costly allowance too. */
 export const isCostlyImage = (pathname: string) => pathname.endsWith('/opengraph-image') || pathname.startsWith('/brand-icon/');

@@ -6,7 +6,7 @@
 import { LEAGUE_IDS } from './leagues';
 
 /** Single-segment pages and metadata routes at the top level. */
-const TOP = new Set(['live', 'props', 'record', 'results', 'plans', 'matchup', 'data', 'privacy', 'icon', 'apple-icon', 'opengraph-image', 'sitemap.xml']);
+const TOP = new Set(['live', 'props', 'record', 'results', 'plans', 'matchup', 'data', 'privacy', 'feedback', 'icon', 'apple-icon', 'opengraph-image', 'sitemap.xml']);
 /** "/parlay/s/<code>" and "/picks/s/<code>", each with a preview image. */
 const shared = (rest: string[]) => rest.length === 0 || (rest[0] === 's' && (rest.length === 2 || (rest.length === 3 && rest[2] === 'opengraph-image')));
 const ID = /^\d{1,15}$/;
@@ -16,6 +16,7 @@ const API = new Set([
   'calendar',
   'cards',
   'csp-report',
+  'feedback',
   'games',
   'graded',
   'graded-props',

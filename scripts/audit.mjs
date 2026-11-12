@@ -49,6 +49,7 @@ async function pages() {
     '/nfl/injuries',
     '/nhl/standings',
     '/privacy',
+    '/feedback',
     '/props?league=nfl',
     '/parlay',
     '/picks',

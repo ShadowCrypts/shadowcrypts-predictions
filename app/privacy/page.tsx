@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 /** Last changed: update this date whenever the page's substance changes. */
-const UPDATED = 'November 10, 2026';
+const UPDATED = 'November 11, 2026';
 const SOURCE = 'https://github.com/ShadowCrypts/shadowcrypts-predictions';
 
 const linkClass = 'text-accent-strong underline underline-offset-2';
@@ -46,13 +46,30 @@ export default function PrivacyPage() {
         />
       </Section>
 
-      <Section title="If you turn on alerts" subtitle="Only then does anything about you reach our server.">
+      <Section title="If you turn on alerts" subtitle="Only then, or when you send feedback (next section), does anything of yours reach our server.">
         <Facts
           items={[
             'Your browser gives us a delivery address from its own push service (run by Google, Mozilla, Apple or Microsoft, depending on your browser). It doesn’t say who you are.',
             'With it we keep what you asked to hear about: your tracked parlays’ legs, the teams and players you follow, and which alerts you want. That’s how the server knows what to send.',
             'Alerts only ever go through those push services, never anywhere else.',
             'Turning alerts off deletes all of it from the server. A browser that hasn’t visited the site for 30 days is deleted automatically.'
+          ]}
+        />
+      </Section>
+
+      <Section title="If you send feedback" subtitle="Only what you write, for the person who runs the site.">
+        <Facts
+          items={[
+            <>
+              The{' '}
+              <Link href="/feedback" className={linkClass}>
+                feedback form
+              </Link>{' '}
+              keeps your message, the kind you picked, which page you came from, when you sent it and, only if you give one, a way to reach
+              you.
+            </>,
+            'No IP address or anything else about you. Messages aren’t published or shared, and they’re kept until they’ve been dealt with and deleted.',
+            'Please leave out anything private. To have a message deleted, send another one saying so.'
           ]}
         />
       </Section>
@@ -72,7 +89,7 @@ export default function PrivacyPage() {
         <Facts
           items={[
             'Errors, content your browser blocked for safety and reported to us, and requests turned away for coming too fast are logged one line each, without IP addresses, identifying headers or the details in a page’s address.',
-            'To stop floods, the server counts requests per address for a minute (new alert sign-ups for an hour), in memory only, and keeps nothing.',
+            'To stop floods, the server counts requests per address for a minute (new alert sign-ups and feedback messages for an hour), in memory only, and keeps nothing.',
             'The company that hosts the server may keep its own access logs, under its own policy.'
           ]}
         />
