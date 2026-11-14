@@ -23,6 +23,8 @@ import { Standouts } from './components/Standouts';
 import { TodaysBrief } from './components/TodaysBrief';
 import { YourPlayers } from './components/YourPlayers';
 import { CompactHistory, YourTeams } from './components/YourTeams';
+import { UfcBanner } from './components/ufc/UfcBanner';
+import { peekUfcModel } from '../lib/ufc/model';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,6 +92,10 @@ export default async function Home() {
     .flatMap((m, i) => biggestMovers(movements[i], m.slate.filter((p) => p.game.state === 'pre'), dayAgo))
     .sort((a, b) => Math.abs(b.to.p - b.from.p) - Math.abs(a.to.p - a.from.p))
     .slice(0, 5);
+  // A UFC card within the week gets a banner (from whatever UFC model is already built: the board never waits on it).
+  const ufc = peekUfcModel();
+  const nextCard = ufc?.upcoming[0];
+  const fightWeek = ufc && nextCard && Date.parse(nextCard.date) - now.getTime() < 7 * 86_400_000 ? { model: ufc, event: nextCard } : null;
   const cardByKey = new Map(cards.map((c) => [`${c.league}:${c.id}`, c]));
   const history: CompactHistory = {};
   models.forEach((m, i) => {
@@ -156,6 +162,8 @@ export default async function Home() {
           </span>
         </Link>
       )}
+
+      {fightWeek && <UfcBanner event={fightWeek.event} model={fightWeek.model} />}
 
       {failed.length > 0 && (
         <p className="rounded-xl border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-ink">

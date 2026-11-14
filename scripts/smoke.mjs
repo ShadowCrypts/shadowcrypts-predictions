@@ -188,6 +188,24 @@ async function main() {
     const { response } = await get(path);
     check(`${path} says how long to keep it`, /^(public, max-age=\d+|no-store)$/.test(response.headers.get('cache-control') ?? ''), response.headers.get('cache-control') ?? 'missing');
   }
+  // UFC: the section, and an event, a fight and a fighter from it.
+  {
+    const ufc = await page('/ufc');
+    check('UFC page shows a card with chances', /UFC/.test(ufc) && />\d{1,2}%</.test(ufc) && ufc.includes('/ufc/fight/'));
+    check('UFC page says where its chances come from', ufc.includes('the market') && ufc.includes('How the forecasts have done'));
+    const eventId = ufc.match(/href="\/ufc\/event\/(\d+)"/)?.[1];
+    const fightId = ufc.match(/href="\/ufc\/fight\/(\d+)"/)?.[1];
+    const fighterId = ufc.match(/href="\/ufc\/fighter\/(\d+)"/)?.[1];
+    check('UFC page links an event, a fight and a fighter', eventId && fightId && fighterId, `${eventId} ${fightId} ${fighterId}`);
+    if (eventId) check('UFC event page lists its fights', (await page(`/ufc/event/${eventId}`)).includes('/ufc/fight/'));
+    if (fightId) {
+      const fight = await page(`/ufc/fight/${fightId}`);
+      check('UFC fight page has the tale of the tape', fight.includes('Tale of the tape') && /"@type":"SportsEvent"/.test(fight));
+    }
+    if (fighterId) check('UFC fighter page has the fight history', (await page(`/ufc/fighter/${fighterId}`)).includes('UFC record'));
+    // A well-formed id nothing matches: a 404, drawn once the page's scripts run (like an unknown game).
+    for (const path of ['/ufc/fight/999999999999', '/ufc/fighter/999999999999', '/ufc/event/999999999999']) check(`${path} → 404`, (await get(path)).response.status === 404);
+  }
   // Feedback: refusals only, so a run against the live site never leaves a message behind (the trap answers
   // "ok" and keeps nothing).
   {

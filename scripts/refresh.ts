@@ -10,12 +10,30 @@
 import { LEAGUE_IDS, LEAGUES, LeagueId } from '../lib/leagues';
 import { getLeagueModel } from '../lib/model';
 import { readLedger } from '../lib/model/ledger';
+import { getUfcModel } from '../lib/ufc/model';
 
 const SOON_MS = 3 * 3_600_000;
 const FAST_MS = 10 * 60_000;
 const SLOW_MS = 45 * 60_000;
 
-const nextRun = new Map<LeagueId, number>(LEAGUE_IDS.map((id) => [id, 0]));
+type Sport = LeagueId | 'ufc';
+const nextRun = new Map<Sport, number>([...LEAGUE_IDS, 'ufc' as const].map((id) => [id, 0]));
+
+/** UFC forecasts lock the same way, in .cache/ufc-ledger.json: every 10 minutes while a fight starts within 3 hours. */
+async function refreshUfc() {
+  const started = Date.now();
+  try {
+    const model = await getUfcModel({ fresh: true });
+    if (Date.parse(model.generatedAt) < started) throw new Error('rebuild failed, still serving the last model');
+    const soon = model.upcoming.flatMap((e) => e.bouts).filter((b) => b.state === 'pre' && Date.parse(b.date) > started && Date.parse(b.date) - started <= SOON_MS).length;
+    const logged = Object.values(model.ledger).filter((e) => e.takenAt === model.generatedAt).length;
+    nextRun.set('ufc', started + (soon ? FAST_MS : SLOW_MS));
+    return `UFC ${logged} logged${soon ? ` (${soon} start within 3h)` : ''}`;
+  } catch (error) {
+    nextRun.set('ufc', started + FAST_MS);
+    return `UFC failed: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
 const clock = (ms: number) => new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
 async function refresh(id: LeagueId) {
@@ -43,7 +61,10 @@ async function main() {
   console.log('Refreshing forecasts every 10 min while a game starts within 3 hours, otherwise every 45 min. Ctrl+C to stop.');
   for (;;) {
     const now = Date.now();
-    const results = await Promise.all(LEAGUE_IDS.filter((id) => nextRun.get(id)! <= now).map(refresh));
+    const results = await Promise.all([
+      ...LEAGUE_IDS.filter((id) => nextRun.get(id)! <= now).map(refresh),
+      ...(nextRun.get('ufc')! <= now ? [refreshUfc()] : [])
+    ]);
     const next = Math.min(...nextRun.values());
     // Plain ASCII so the line survives being redirected to a log file on Windows.
     console.log(`${clock(now)}  ${results.join(' | ')} | next pass ${clock(next)}`);

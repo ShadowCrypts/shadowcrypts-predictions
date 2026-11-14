@@ -5,7 +5,7 @@
 <h1 align="center">ShadowCrypts Predictions</h1>
 
 <p align="center">
-  Win probabilities, player props, fantasy rankings and a public, graded track record for every NFL, NBA, MLB and NHL game:<br>
+  Win probabilities, player props, fantasy rankings and a public, graded track record for every NFL, NBA, MLB and NHL game and UFC fight:<br>
   built on free public data, tested against the betting market, and honest about where it loses.
 </p>
 
@@ -46,6 +46,7 @@ Those are about what the betting market manages, and that's the point: in testin
 - **Player props for three leagues.** Projections from minutes, ice time and target share, set next to the sportsbooks' lines. The book was more accurate in every league, so the site shows the book's chance and logs where the model disagrees, graded forward (a losing record in the NBA, and it says so).
 - **Same-game parlays priced honestly.** A Gaussian copula, fitted on how one game's props and result move together. On held-out games, NBA parlays whose legs move together were priced at 34% and hit 34%, where multiplying the legs said 20%.
 - **Live everything.** Live win probability and live prop chances, fitted on play-by-play rebuilt period by period. At halftime the live NBA prop chance cut log loss from 0.685 to 0.526. There's a live mode with a sweat meter for tracked parlays, and background push alerts with no account needed.
+- **UFC, with the bar set honestly.** Fighter ratings from 8,700+ UFC fights since 2001, tested on 2019 onward against the betting market: the ratings picked 56% of winners and the market 67.5%, and no blend of the two beat the market, so with a line the forecast is the market's (margin removed). The ratings rank each division instead. Every fight gets a tale of the tape, and "favorites like this" history: big favorites (75–85%) have won about 87%, a little more than their price said.
 - **Season simulation in your browser.** The playoff machine re-runs 4,000 seasons on your device when you pick a winner. Common random numbers, one stream per simulation and conference, mean only what your pick changed moves.
 - **Fantasy football with receipts.** Weekly rankings with a published backtest: a smaller average miss than each player's own season average in every season on file (5.08 against 5.55 in 2026). There's a start-or-sit number from about 890,000 real pairings, and a forward test locked before each kickoff.
 - **The numbers are checked, not trusted.** `npm run datacheck` runs about 29,000 checks of records, scores, rosters, standings, stat leaders and player game logs against ESPN's own feeds, plus arithmetic that has to hold (playoff odds add up to the playoff spots, the track record recounts from its CSV). It's found real bugs: box scores that had drifted from official corrections, and empty rosters that turned off a filter.

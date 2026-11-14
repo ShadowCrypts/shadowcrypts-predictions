@@ -50,6 +50,7 @@ async function pages() {
     '/nhl/standings',
     '/privacy',
     '/feedback',
+    '/ufc',
     '/props?league=nfl',
     '/parlay',
     '/picks',

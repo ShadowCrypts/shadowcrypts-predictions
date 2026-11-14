@@ -48,6 +48,8 @@ export function isKnownPage(pathname: string) {
   if (first === 'brand-icon') return rest.length === 1;
   // The parlay builder and pick'em, and what's shared from each (with a preview image).
   if (first === 'parlay' || first === 'picks') return shared(rest);
+  // UFC: its own section (fights and fighters, not teams and games).
+  if (first === 'ufc') return rest.length === 0 || (rest.length === 2 && ['event', 'fight', 'fighter'].includes(rest[0]) && ID.test(rest[1]));
   if (!(LEAGUE_IDS as string[]).includes(first)) return false;
   if (rest.length === 0) return true;
   // (Fantasy is football only; the page itself says so with a 404.)

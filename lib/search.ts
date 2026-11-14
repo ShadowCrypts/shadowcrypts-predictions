@@ -9,7 +9,13 @@ import type { LeagueId } from './leagues';
  * carries and targets) as a percentile of his league, so regulars rank above
  * backups with the same name.
  */
-export type PlayerHit = { league: LeagueId; id: string; name: string; team: string; usage: number };
+export type PlayerHit = { league: LeagueId | 'ufc'; id: string; name: string; team: string; usage: number };
+
+/** Where a search hit's page is: a player's in his league, a UFC fighter's in the UFC section. */
+export const playerHref = (p: Pick<PlayerHit, 'league' | 'id'>) => (p.league === 'ufc' ? `/ufc/fighter/${p.id}` : `/${p.league}/player/${p.id}`);
+
+/** ESPN files UFC fighters' photos under "mma". */
+export const photoLeague = (league: string) => (league === 'ufc' ? 'mma' : league);
 
 /** Lowercase, accents off (Jokić finds Jokic), punctuation to spaces: what search compares. */
 export function searchable(text: string) {
@@ -22,7 +28,7 @@ export function searchable(text: string) {
 }
 
 /** Where search loads the player list; the version changes with its shape, so a browser's cached copy of an older one isn't used. */
-export const PLAYERS_URL = '/api/players?v=2';
+export const PLAYERS_URL = '/api/players?v=3';
 
 export const queryTerms =(query: string) => searchable(query).split(' ').filter(Boolean);
 

@@ -31,7 +31,7 @@ export default function OpenGraphImage() {
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <span style={{ fontSize: 60, fontWeight: 700, lineHeight: 1.1, maxWidth: 960 }}>Every NFL, NBA, MLB and NHL game, forecast and graded in public.</span>
+          <span style={{ fontSize: 60, fontWeight: 700, lineHeight: 1.1, maxWidth: 960 }}>Every NFL, NBA, MLB and NHL game and UFC fight, forecast and graded in public.</span>
           <span style={{ fontSize: 28, color: '#bab5ce' }}>Win probabilities · power rankings · open track record</span>
         </div>
       </div>

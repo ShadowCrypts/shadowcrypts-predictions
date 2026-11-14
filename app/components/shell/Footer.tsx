@@ -12,7 +12,8 @@ const COLUMNS = [
       { href: '/nfl', label: 'NFL' },
       { href: '/nba', label: 'NBA' },
       { href: '/mlb', label: 'MLB' },
-      { href: '/nhl', label: 'NHL' }
+      { href: '/nhl', label: 'NHL' },
+      { href: '/ufc', label: 'UFC' }
     ]
   },
   {

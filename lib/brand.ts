@@ -1,9 +1,9 @@
 export const BRAND = {
   name: 'ShadowCrypts Predictions',
   shortName: 'ShadowCrypts',
-  tagline: 'Win probabilities for every NFL, NBA, MLB and NHL game, graded in public.',
+  tagline: 'Win probabilities for every NFL, NBA, MLB and NHL game and UFC fight, graded in public.',
   description:
-    'ShadowCrypts Predictions: win probabilities, power rankings and an open track record for every NFL, NBA, MLB and NHL game, anchored on the betting market.',
+    'ShadowCrypts Predictions: win probabilities, power rankings and an open track record for every NFL, NBA, MLB and NHL game and every UFC fight, anchored on the betting market.',
   themeColor: '#08070e'
 };
 

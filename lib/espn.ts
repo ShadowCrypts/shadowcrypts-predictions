@@ -101,7 +101,7 @@ export type InjuryEntry = {
   date: string | null;
 };
 
-async function fetchJson(url: string, lane = throttle): Promise<any> {
+export async function fetchJson(url: string, lane = throttle): Promise<any> {
   let lastError: unknown;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {

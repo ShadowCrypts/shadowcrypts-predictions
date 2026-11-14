@@ -26,7 +26,7 @@ const display = Sora({ subsets: ['latin'], variable: '--font-display', weight: [
 export const metadata: Metadata = {
   // Set SITE_URL in production so shared links get absolute preview-image URLs.
   metadataBase: new URL(process.env.SITE_URL ?? 'http://localhost:3000'),
-  title: { default: `${BRAND.name} · NFL, NBA, MLB & NHL forecasts`, template: `%s · ${BRAND.shortName}` },
+  title: { default: `${BRAND.name} · NFL, NBA, MLB, NHL & UFC forecasts`, template: `%s · ${BRAND.shortName}` },
   description: BRAND.description,
   applicationName: BRAND.name,
   appleWebApp: { capable: true, title: BRAND.shortName, statusBarStyle: 'black-translucent' },

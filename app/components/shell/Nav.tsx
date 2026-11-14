@@ -13,6 +13,7 @@ const LINKS: { href: string; label: string; short?: string; wideOnly?: boolean; 
   { href: '/nba', label: 'NBA' },
   { href: '/mlb', label: 'MLB' },
   { href: '/nhl', label: 'NHL' },
+  { href: '/ufc', label: 'UFC' },
   { href: '/props', label: 'Props' },
   { href: '/matchup', label: 'Matchup', wideOnly: true },
   { href: '/record', label: 'Track record', short: 'Record' }
@@ -70,6 +71,7 @@ const TABS = [
   { href: '/nba', label: 'NBA' },
   { href: '/mlb', label: 'MLB' },
   { href: '/nhl', label: 'NHL' },
+  { href: '/ufc', label: 'UFC' },
   { href: '/props', label: 'Props', icon: 'props' as const },
   { href: '/record', label: 'Record', icon: 'record' as const }
 ];
@@ -79,7 +81,7 @@ export function MobileTabs() {
   const isActive = useIsActive();
   return (
     <nav aria-label="Main" className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/90 backdrop-blur-xl md:hidden">
-      <ul className="mx-auto grid max-w-lg grid-cols-7">
+      <ul className="mx-auto grid max-w-lg grid-cols-8">
         {TABS.map((tab) => {
           const active = isActive(tab.href);
           return (

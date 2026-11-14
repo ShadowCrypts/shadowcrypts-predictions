@@ -3,7 +3,7 @@
 import { ArrowRight, CalendarDays, CornerDownLeft, Search as SearchIcon, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { findGames, findPlayers, GameHit, PlayerHit, PLAYERS_URL, queryTerms, searchable } from '../../../lib/search';
+import { findGames, findPlayers, GameHit, photoLeague, PlayerHit, playerHref, PLAYERS_URL, queryTerms, searchable } from '../../../lib/search';
 import { playerKey, teamKey, useFavorites, useFollowedPlayers } from '../favorites';
 import { PlayerPhoto } from '../PlayerPhoto';
 import { TeamLogo } from '../TeamLogo';
@@ -64,6 +64,7 @@ const PAGES: Item[] = [
   { key: 'p-machine-nba', href: '/nba/playoffs', title: 'NBA playoff machine', detail: 'Pick winners and watch every team\'s playoff chances change' },
   { key: 'p-machine-nhl', href: '/nhl/playoffs', title: 'NHL playoff machine', detail: 'Pick winners and watch every team\'s playoff chances change' },
   { key: 'p-compare', href: '/nba/compare', title: 'Compare players', detail: 'Any two players side by side: projections, lines and recent form' },
+  { key: 'p-ufc', href: '/ufc', title: 'UFC predictions', detail: 'Win chances for every fight on the next card, and fighter ratings by division' },
   { key: 'p-record', href: '/record', title: 'Track record', detail: 'Every graded forecast and how the model works' },
   { key: 'p-privacy', href: '/privacy', title: 'Privacy', detail: 'What the site keeps about you (almost nothing)' }
 ];
@@ -126,9 +127,9 @@ export function Search() {
     const teamItem = (t: TeamHit): Item => ({ key: `t-${t.league}-${t.id}`, href: `/${t.league}/team/${t.id}`, title: t.name, detail: t.league.toUpperCase(), team: t });
     const playerItem = (p: PlayerHit): Item => ({
       key: `pl-${p.league}-${p.id}`,
-      href: `/${p.league}/player/${p.id}`,
+      href: playerHref(p),
       title: p.name,
-      detail: `${p.team ? `${p.team} · ` : ''}${p.league.toUpperCase()} · props and recent games`,
+      detail: p.league === 'ufc' ? `${p.team} · UFC record and fights` : `${p.team ? `${p.team} · ` : ''}${p.league.toUpperCase()} · props and recent games`,
       player: p
     });
     // Nothing typed yet: who you follow comes first, a keystroke away.
@@ -186,13 +187,14 @@ export function Search() {
       <button
         type="button"
         onClick={show}
-        className="flex h-9 items-center gap-2 rounded-lg px-2.5 text-sm text-ink-3 ring-1 ring-line transition hover:bg-raised hover:text-ink lg:w-56"
+        className="flex h-9 items-center gap-2 rounded-lg px-2.5 text-sm text-ink-3 ring-1 ring-line transition hover:bg-raised hover:text-ink xl:w-56"
         aria-label="Search teams, players and pages"
         aria-keyshortcuts="Control+K Meta+K"
       >
+        {/* Just the icon until extra-large screens: with every league in the nav, the box doesn't fit beside it before then. */}
         <SearchIcon className="h-4 w-4" aria-hidden />
-        <span className="hidden lg:inline">Teams, players…</span>
-        <kbd className="ml-auto hidden rounded border border-line px-1.5 text-[10px] font-semibold text-ink-3 lg:inline">{shortcut}</kbd>
+        <span className="hidden xl:inline">Teams, players…</span>
+        <kbd className="ml-auto hidden rounded border border-line px-1.5 text-[10px] font-semibold text-ink-3 xl:inline">{shortcut}</kbd>
       </button>
 
       {open && (
@@ -242,7 +244,7 @@ export function Search() {
                   {item.team ? (
                     <TeamLogo src={item.team.logo} abbr={item.team.abbr} size={28} />
                   ) : item.player ? (
-                    <PlayerPhoto league={item.player.league} id={item.player.id} name={item.player.name} size={28} />
+                    <PlayerPhoto league={photoLeague(item.player.league)} id={item.player.id} name={item.player.name} size={28} />
                   ) : item.game ? (
                     <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${item.game.state === 'in' ? 'bg-live/15 text-live' : 'bg-accent-2/15 text-accent-2'}`}>
                       <CalendarDays className="h-3.5 w-3.5" aria-hidden />

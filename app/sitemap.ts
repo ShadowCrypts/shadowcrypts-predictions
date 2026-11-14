@@ -5,6 +5,7 @@ import { getLeagueModel } from '../lib/model';
 import { getAllModels } from '../lib/model/all';
 import { playerDirectory } from '../lib/model/playerIndex';
 import { propEngine } from '../lib/model/propEngines';
+import { getUfcModel } from '../lib/ufc/model';
 
 // Built per request from the models the server already holds (not at build time, which would mean downloading every season).
 export const dynamic = 'force-dynamic';
@@ -57,6 +58,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const p of m.slate) {
       if (!p.game.completed && p.game.state !== 'post') pages.push({ url: `${url}/${m.league}/game/${p.game.id}`, changeFrequency: 'hourly', priority: 0.7 });
     }
+  }
+  // UFC: the section, cards still to come and the last few, their fights, and fighters who are active.
+  const ufc = await getUfcModel().catch(() => null);
+  if (ufc) {
+    pages.push({ url: `${url}/ufc`, lastModified: now, changeFrequency: 'hourly', priority: 0.9 });
+    for (const e of [...ufc.upcoming, ...ufc.recent.slice(0, 3)]) {
+      const coming = ufc.upcoming.includes(e);
+      pages.push({ url: `${url}/ufc/event/${e.id}`, changeFrequency: coming ? 'hourly' : 'weekly', priority: coming ? 0.8 : 0.5 });
+      for (const b of e.bouts) pages.push({ url: `${url}/ufc/fight/${b.id}`, changeFrequency: coming ? 'hourly' : 'weekly', priority: coming ? 0.7 : 0.4 });
+    }
+    for (const [id, f] of ufc.fighters) if (f.active) pages.push({ url: `${url}/ufc/fighter/${id}`, changeFrequency: 'weekly', priority: 0.5 });
   }
   return pages;
 }
