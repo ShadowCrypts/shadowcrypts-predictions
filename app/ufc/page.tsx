@@ -33,6 +33,12 @@ function RecordSection({ model }: { model: UfcModel }) {
           sub={live.games ? `${live.correct} of ${live.games} since the UFC section opened` : 'Grading starts with the first card after the UFC section opened (Nov 2026)'}
         />
       </div>
+      <p className="mt-4 max-w-3xl text-sm text-ink-2">
+        We also tried adding what the fighters bring on top of the market&apos;s chance: age on fight night, reach, height, stance, UFC experience and time
+        since the last fight, with weights set on 2019–2022 fights. On 1,606 fights from 2023 on it helped by less than the noise and picked
+        fewer winners, so it isn&apos;t used. Older fighters have won a little less often than their odds said (by up to about 4 points since 2019,
+        more in some years than others), not steadily enough to forecast with.
+      </p>
       <h3 className="mt-6 text-sm font-semibold text-ink">Favorites, by their chance</h3>
       <p className="mt-1 max-w-3xl text-sm text-ink-2">
         How often the market&apos;s favorite won, against the chance its price gave. Big favorites have won a little more often than their prices said: the

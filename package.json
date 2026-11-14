@@ -27,6 +27,7 @@
     "refresh": "tsx scripts/refresh.ts",
     "backtest": "tsx scripts/backtest.ts",
     "backtest:ufc": "tsx scripts/ufc-backtest.ts",
+    "backtest:ufc-attributes": "tsx scripts/ufc-attributes-backtest.ts",
     "audit": "node scripts/audit.mjs",
     "visits": "node scripts/visits.mjs",
     "feedback": "node scripts/feedback.mjs"
