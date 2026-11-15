@@ -24,20 +24,41 @@ export type SweatGame = {
 const EVERY_MS = 60_000;
 
 /**
+ * Only games started in the last three days are replayed, at most 12 a request (a parlay's most legs). Play by
+ * play is read from ESPN on demand and kept for good, so with any game in the history allowed (about 14,000),
+ * anyone could walk the server through all of them: thousands of reads from ESPN, gigabytes held in memory.
+ */
+export const SWEAT_WINDOW_MS = 3 * 86_400_000;
+export const SWEAT_MAX_GAMES = 12;
+
+/** Whether a game started recently enough to replay (and isn't in the future by more than a day's slack). */
+export const isRecentGame = (date: string, now: number) => {
+  const start = Date.parse(date);
+  return Number.isFinite(start) && start >= now - SWEAT_WINDOW_MS && start <= now + 86_400_000;
+};
+
+/**
  * The games behind a parlay's legs, rebuilt from play-by-play for games under
  * way or over (games not started have nothing to show yet).
  */
-export async function parlaySweat(ids: string[]): Promise<Record<string, SweatGame>> {
+export async function parlaySweat(ids: string[], now = Date.now()): Promise<Record<string, SweatGame>> {
   const parsed = ids.map((id) => [id, parseLegId(id)] as const).filter((x): x is readonly [string, ParsedLeg] => !!x[1] && isLeagueId(x[1].league));
   const out: Record<string, SweatGame> = {};
+  let budget = SWEAT_MAX_GAMES;
   for (const leagueId of new Set(parsed.map(([, l]) => l.league))) {
     if (!isLeagueId(leagueId)) continue;
     const league = LEAGUES[leagueId];
     const model = await getLeagueModel(leagueId).catch(() => null);
     if (!model) continue;
     const legs = parsed.filter(([, l]) => l.league === leagueId);
+    const gameIds = [...new Set(legs.map(([, l]) => l.gameId))].filter((gameId) => {
+      const game = model.predictions[gameId]?.game;
+      return !!game && isRecentGame(game.date, now);
+    });
+    const allowed = gameIds.slice(0, Math.max(0, budget));
+    budget -= allowed.length;
     await Promise.all(
-      [...new Set(legs.map(([, l]) => l.gameId))].map(async (gameId) => {
+      allowed.map(async (gameId) => {
         const game = model.predictions[gameId]?.game;
         if (!game || game.state === 'pre' || (game.state === 'post' && !game.completed)) return;
         const moments = await getPlayMoments(league, gameId, game.completed).catch(() => null);

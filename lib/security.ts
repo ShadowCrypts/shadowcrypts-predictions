@@ -127,8 +127,12 @@ export type Verdict = { ok: boolean; limit: number; remaining: number; resetSeco
 
 /**
  * Fixed-window counters: at most `limit` hits per key in each `windowMs`.
- * Old windows are swept as it goes, and past `maxKeys` the table is cleared
- * rather than allowed to grow without bound (failing open, not closed).
+ * Old windows are swept as it goes, and past `maxKeys` the tenth of the
+ * table with the fewest hits goes (the oldest first among equals): a client
+ * that's been busy, or is being refused, keeps its count however many new
+ * addresses arrive. (It used to clear the whole table: anyone holding enough
+ * addresses, like an IPv6 /48 with its 65,536 /64s, could fill it on purpose
+ * and reset every client's count, their own included, at will.)
  */
 export class RateLimiter {
   private hits = new Map<string, { start: number; count: number }>();
@@ -145,7 +149,11 @@ export class RateLimiter {
       for (const [k, w] of this.hits) if (now - w.start >= this.windowMs) this.hits.delete(k);
       this.sweptAt = now;
     }
-    if (this.hits.size >= this.maxKeys && !this.hits.has(key)) this.hits.clear();
+    if (this.hits.size >= this.maxKeys && !this.hits.has(key)) {
+      // Once per tenth of the cap in new keys, so the sort's cost is spread thin.
+      const quietest = [...this.hits].sort((a, b) => a[1].count - b[1].count || a[1].start - b[1].start).slice(0, Math.max(1, Math.ceil(this.maxKeys / 10)));
+      for (const [k] of quietest) this.hits.delete(k);
+    }
     let w = this.hits.get(key);
     if (!w || now - w.start >= this.windowMs) {
       w = { start: now, count: 0 };

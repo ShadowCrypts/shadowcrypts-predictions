@@ -23,6 +23,9 @@ function teamIn(read: LiveBox | undefined, playerId: string) {
   return null;
 }
 
+/** Most box scores one request may have the server read from ESPN (a parlay has at most 12 legs). */
+export const LEG_FETCHES = 12;
+
 /**
  * Results for parlay legs, by id: from the score (a team to win) or the
  * player's box score (a prop) once the game is final, and the box score so
@@ -52,7 +55,9 @@ export async function legResults(ids: string[]): Promise<Record<string, LegResul
     if (engine) {
       const finals = games.map((p) => p.game).filter((g) => g.completed && wantsProps(g.id));
       if (finals.length) {
-        const [box, skill] = await Promise.all([getBoxScores(league, finals), getNflSkillBoxes(league, finals)]);
+        // Box scores the server already holds are free; ones it would have to read from ESPN are capped per request,
+        // so a list of old games can't send it on hundreds of reads (the rest come with a later request).
+        const [box, skill] = await Promise.all([getBoxScores(league, finals, LEG_FETCHES), getNflSkillBoxes(league, finals, LEG_FETCHES)]);
         const inputs: PropInputs = { games: finals, box, skill, ...noContext };
         for (const g of finals) actuals.set(g.id, engine.actuals(g.id, inputs));
       }

@@ -38,6 +38,14 @@ describe('UFC feed', () => {
     assert.equal(boutEnding(bout), 'Decision');
   });
 
+  it('keeps a flag only from ESPN’s own image server', () => {
+    const withFlag = (href: string) => parseBout('1', rawBout({ competitors: [{ ...competitor('1', 'A', 1), athlete: { displayName: 'A', flag: { href, alt: 'X' } } }, competitor('2', 'B', 2)] }), 0)!.a.flag;
+    assert.equal(withFlag('https://a.espncdn.com/i/teamlogos/countries/500/bra.png'), 'https://a.espncdn.com/i/teamlogos/countries/500/bra.png');
+    for (const bad of ['https://evil.example/x.png', 'javascript:alert(1)', 'http://a.espncdn.com/i/x.png', 'https://a.espncdn.com.evil.example/x.png', 'https://a.espncdn.com/x" onerror="alert(1)']) {
+      assert.equal(withFlag(bad), null, bad);
+    }
+  });
+
   it('keeps no result before a fight is over, and none when the feed marks both as winners', () => {
     const pre = parseBout('1', rawBout({ status: { type: { state: 'pre', completed: false } } }), 0)!;
     assert.equal(pre.state, 'pre');

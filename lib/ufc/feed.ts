@@ -53,6 +53,11 @@ export type UfcOdds = {
 };
 
 const str = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : null);
+/** An image address from the feed, kept only if it's on ESPN's own image server (what the page's policy allows anyway). */
+const espnImage = (value: unknown) => {
+  const url = str(value);
+  return url && /^https:\/\/a\.espncdn\.com\/[^\s"'<>]*$/.test(url) ? url : null;
+};
 const num = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value)) ? Number(value) : null);
 
 function parseFighter(raw: any, completed: boolean): UfcFighter | null {
@@ -64,7 +69,7 @@ function parseFighter(raw: any, completed: boolean): UfcFighter | null {
     name,
     shortName: str(raw?.athlete?.shortName) ?? name,
     country: str(raw?.athlete?.flag?.alt),
-    flag: str(raw?.athlete?.flag?.href),
+    flag: espnImage(raw?.athlete?.flag?.href),
     listedRecord: str((raw?.records ?? []).find((r: any) => r?.type === 'total' || r?.name === 'overall')?.summary),
     winner: completed && typeof raw?.winner === 'boolean' ? raw.winner : null
   };

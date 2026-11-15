@@ -17,9 +17,20 @@ export const MAX_KEYS = 300;
 export const emptyDay = (): DayCounts => ({ arrivals: 0, pages: {}, from: {} });
 const emptyRobots = (): RobotCounts => ({ arrivals: 0, pages: {}, why: {} });
 
+/**
+ * Keys come from the request (the referring site's name is whatever a visitor's browser, or a script, says), so
+ * JavaScript's built-in names can't be allowed to act as themselves: "constructor" would read Object's own and
+ * add to it as text, and "__proto__" would vanish into the object's prototype. Only own keys count, and
+ * "__proto__" is stored under a harmless spelling.
+ */
+const safeKey = (key: string) => (key === '__proto__' ? '(__proto__)' : key);
+const hasOwn = (o: object, key: string) => Object.prototype.hasOwnProperty.call(o, key);
+
 const bump = (counts: Record<string, number>, key: string, by = 1) => {
-  const at = key in counts || Object.keys(counts).length < MAX_KEYS ? key : 'other';
-  counts[at] = (counts[at] ?? 0) + by;
+  const own = safeKey(key);
+  const at = hasOwn(counts, own) || Object.keys(counts).length < MAX_KEYS ? own : 'other';
+  const current = hasOwn(counts, at) && typeof counts[at] === 'number' ? counts[at] : 0;
+  counts[at] = current + (typeof by === 'number' && Number.isFinite(by) ? by : 0);
 };
 
 export function addVisit(day: DayCounts, page: string, from: string | null) {

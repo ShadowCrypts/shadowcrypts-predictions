@@ -48,6 +48,22 @@ describe('rate limits', () => {
     for (let i = 0; i < 1_000; i += 1) limiter.take(`client-${i}`, 5);
     assert.ok((limiter as unknown as { hits: Map<string, unknown> }).hits.size <= 100);
   });
+
+  it("can't be reset by flooding it with new addresses: a refused client stays refused", () => {
+    const limiter = new RateLimiter(5, 60_000, 100);
+    for (let i = 0; i < 8; i += 1) limiter.take('attacker', 1_000);
+    assert.equal(limiter.take('attacker', 1_000).ok, false);
+    // 5,000 one-off addresses (an IPv6 block's worth of /64s) fill the table fifty times over...
+    for (let i = 0; i < 5_000; i += 1) limiter.take(`2001:db8:${i}::/64`, 2_000);
+    // ...and the busy one is still counted and still refused within its window.
+    assert.equal(limiter.take('attacker', 3_000).ok, false);
+    // A regular visitor partway through their minute isn't the first to go either.
+    const fresh = new RateLimiter(5, 60_000, 100);
+    fresh.take('regular', 1_000);
+    fresh.take('regular', 1_000);
+    for (let i = 0; i < 500; i += 1) fresh.take(`one-off-${i}`, 2_000);
+    assert.equal(fresh.take('regular', 3_000).remaining, 2);
+  });
 });
 
 describe('request bodies and origins', () => {

@@ -24,6 +24,28 @@ const shared = globalThis as typeof globalThis & {
 shared.__scCache ??= { memory: new Map(), inflight: new Map(), stores: new Map() };
 const { memory, inflight } = shared.__scCache;
 
+/**
+ * Most entries kept in memory, least recently used out first; persisted ones come back from disk when next asked
+ * for (a few milliseconds). Without a cap every key ever read stayed: each old game page someone opened (a crawler,
+ * or anyone walking the history on purpose) added about a megabyte for good, and 1,500 to 2,000 of them would
+ * have run the server out of memory.
+ */
+export const MEMORY_LIMIT = 1_500;
+
+/** Holds an entry as the most recently used, letting the least recently used go past the cap. */
+function remember(key: string, entry: Entry<unknown>) {
+  memory.delete(key);
+  memory.set(key, entry);
+  while (memory.size > MEMORY_LIMIT) {
+    const oldest = memory.keys().next().value;
+    if (oldest === undefined) break;
+    memory.delete(oldest);
+  }
+}
+
+/** How many entries memory holds (for tests and health checks). */
+export const memoryEntries = () => memory.size;
+
 function fileFor(key: string) {
   return path.join(CACHE_DIR, `${key.replace(/[^a-z0-9._-]+/gi, '_')}.json`);
 }
@@ -77,6 +99,7 @@ function isFresh(entry: Entry<unknown>, ttlMs: number) {
  */
 export async function cached<T>(key: string, options: CacheOptions<T>, loader: () => Promise<T>): Promise<T> {
   const hit = memory.get(key) as Entry<T> | undefined;
+  if (hit) remember(key, hit);
   if (hit && isFresh(hit, options.ttlMs)) return hit.value;
 
   const pending = inflight.get(key);
@@ -93,7 +116,7 @@ export async function cached<T>(key: string, options: CacheOptions<T>, loader: (
       const disk = await readDisk<T>(key);
       if (disk) {
         if (isFresh(disk, options.ttlMs)) {
-          memory.set(key, disk);
+          remember(key, disk);
           return disk.value;
         }
         stale = disk;
@@ -103,7 +126,7 @@ export async function cached<T>(key: string, options: CacheOptions<T>, loader: (
     try {
       const value = await loader();
       const entry: Entry<T> = { value, fetchedAt: Date.now(), final: options.isFinal?.(value) ?? false };
-      memory.set(key, entry);
+      remember(key, entry);
       if (options.persist) await writeDisk(key, entry);
       return value;
     } catch (error) {

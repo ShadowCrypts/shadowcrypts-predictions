@@ -34,10 +34,12 @@ const WHY = {
   'no-language': 'no language set, which every browser sends'
 };
 
-const total = { arrivals: 0, pages: {}, from: {} };
-const robots = { arrivals: 0, pages: {}, why: {} };
+// Tallies with no prototype, so a stored key like "constructor" is just a name; anything that isn't a number adds nothing.
+const tally = () => Object.create(null);
+const total = { arrivals: 0, pages: tally(), from: tally() };
+const robots = { arrivals: 0, pages: tally(), why: tally() };
 const add = (into, from = {}) => {
-  for (const [k, v] of Object.entries(from)) into[k] = (into[k] ?? 0) + v;
+  for (const [k, v] of Object.entries(from)) if (typeof v === 'number' && Number.isFinite(v)) into[k] = (into[k] ?? 0) + v;
 };
 console.log(`People arriving, last ${files.length} day${files.length === 1 ? '' : 's'} on file (UTC):\n`);
 const rows = files.map((f) => {

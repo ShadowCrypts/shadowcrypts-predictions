@@ -101,6 +101,21 @@ describe('what a visit records', () => {
     assert.deepEqual(mergeDays(a, b), { arrivals: 5, pages: { '/': 2, '/nba': 3 }, from: { direct: 3, 'x.com': 2 } });
   });
 
+  it("can't be fooled by JavaScript's built-in names in a forged referrer (constructor, __proto__)", () => {
+    const day = emptyDay();
+    for (const referer of ['https://constructor/', 'https://constructor/', 'https://__proto__/', 'https://google.com/']) {
+      addVisit(day, '/nba', referrerHost(referer, ['shadowcrypts.com']));
+    }
+    assert.deepEqual(day.from, { constructor: 2, '(__proto__)': 1, 'google.com': 1 });
+    assert.equal(Object.getPrototypeOf(day.from), Object.prototype);
+    // Saved and read back, then merged, it stays numbers.
+    const merged = mergeDays(JSON.parse(JSON.stringify(day)) as DayCounts, day);
+    assert.deepEqual(merged.from, { constructor: 4, '(__proto__)': 2, 'google.com': 2 });
+    // A tampered file with text where a count belongs adds nothing rather than turning the total into text.
+    const tampered = mergeDays({ arrivals: 1, pages: {}, from: { constructor: 'x' as unknown as number } }, day);
+    assert.equal(tampered.from.constructor, 2);
+  });
+
   it('keeps robots in a total of their own, never in the people count', () => {
     const day = emptyDay();
     addVisit(day, '/nba', null);
