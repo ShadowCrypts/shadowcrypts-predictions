@@ -42,6 +42,10 @@ this GitHub repository. Any provider works; it needs about 1 GB of memory free f
    the proxy off too. Keep Rocket Loader and automatic Web Analytics off: anything Cloudflare injects
    into pages is blocked by the site's Content Security Policy.
 
+   While you're in Cloudflare: set **SSL/TLS → Edge Certificates → Minimum TLS Version** to TLS 1.2, turn on
+   **DNS → Settings → DNSSEC**, and, if the domain sends no email, add two TXT records so nobody can send mail
+   pretending to be it: `@` → `v=spf1 -all` and `_dmarc` → `v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s`.
+
    With the proxy on, the firewall lets only Cloudflare's addresses reach port 443, so nobody can get
    around Cloudflare by using the server's own address (`firewall.sh`, run every 10 minutes). Port 80
    stays open for Let's Encrypt's certificate checks and redirects to HTTPS. Turning the proxy off again

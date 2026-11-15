@@ -14,12 +14,31 @@ Restart=always
 RestartSec=5
 KillMode=mixed
 TimeoutStopSec=20
-# It needs nothing beyond its own folders.
+# It needs nothing beyond its own folders and the network: everything else is read-only or out of sight, so a
+# bug in the site can't reach the rest of the server. (Not MemoryDenyWriteExecute: Node's JIT needs it.)
 NoNewPrivileges=true
-ProtectSystem=full
+ProtectSystem=strict
+ReadWritePaths=/srv/shadowcrypts
 ProtectHome=read-only
 PrivateTmp=true
-ReadWritePaths=/srv/shadowcrypts
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+CapabilityBoundingSet=
+AmbientCapabilities=
+# Files it writes (records, backups' sources, feedback) are for its own user and group only.
+UMask=0027
 
 [Install]
 WantedBy=multi-user.target

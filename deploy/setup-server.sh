@@ -7,8 +7,10 @@
 # handles HTTPS, from Caddy's own repository); makes a "shadowcrypts" user that runs the site with no admin
 # rights; lays out /srv/shadowcrypts; installs the `update-site` command, the service that keeps the site
 # running and the nightly backup; opens only SSH, HTTP and HTTPS in the firewall (HTTPS only from Cloudflare
-# while the domain goes through its proxy, see firewall.sh); and turns off password logins over SSH (keys
-# only). It's safe to run again: each step checks what's already done.
+# while the domain goes through its proxy, see firewall.sh); turns off password logins over SSH (keys only)
+# and shuts out addresses that keep failing (fail2ban); locks the image's unused default account; and lets
+# security updates restart the server at 04:45 when they need to. It's safe to run again: each step checks
+# what's already done.
 #
 # It doesn't put the site itself up: run `update-site` after it for that.
 set -euo pipefail
@@ -27,10 +29,15 @@ if [ "$(id -u)" -ne 0 ]; then echo "Run this as root." >&2; exit 1; fi
 step "System updates, and automatic security updates from now on"
 apt-get update -q
 apt-get -y -q -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold upgrade
-apt-get -y -q install git curl ca-certificates xz-utils ufw gnupg dnsutils debian-keyring debian-archive-keyring apt-transport-https unattended-upgrades
+apt-get -y -q install git curl ca-certificates xz-utils ufw gnupg dnsutils debian-keyring debian-archive-keyring apt-transport-https unattended-upgrades fail2ban
 cat > /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
+EOF
+# An update that needs a restart (a new kernel) gets one, at a quiet hour, so fixes don't sit waiting.
+cat > /etc/apt/apt.conf.d/52shadowcrypts-reboot <<'EOF'
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "04:45";
 EOF
 
 step "Clock on US Eastern time, like the site's schedules (logs and the nightly backup go by it)"
@@ -91,18 +98,45 @@ if grep -q '^TRUST_PROXY_HOPS=1$' "$BASE/shared/.env"; then
 fi
 chmod 640 "$BASE/shared/.env"
 chown -R "$APP:$APP" "$BASE"
+# The site's data and backups (feedback can hold a way to reach someone) are for the site's user only.
+chmod -R o-rwx "$BASE/shared" "$BASE/backups"
 echo "$BASE: releases/ (each version of the site), shared/.cache (its data), shared/.env (settings), backups/"
 
 step "The update-site command, the service and the nightly backup"
 sed -e "s#__REPO__#$REPO#" "$HERE/update-site.sh" > /usr/local/bin/update-site
 chmod 755 /usr/local/bin/update-site
-install -m 644 "$HERE/shadowcrypts.service" /etc/systemd/system/shadowcrypts.service
+unit=/etc/systemd/system/shadowcrypts.service
+unit_changed=0
+if [ -f "$unit" ] && ! cmp -s "$HERE/shadowcrypts.service" "$unit"; then
+  cp "$unit" /root/shadowcrypts.service.previous
+  unit_changed=1
+fi
+install -m 644 "$HERE/shadowcrypts.service" "$unit"
 cat > /etc/cron.d/shadowcrypts-backup <<EOF
 # Every night: the records that can't be downloaded again (locked forecasts, logged picks, feedback), kept 30 days.
-17 4 * * * $APP cd $BASE/shared/.cache && tar -czf $BASE/backups/records-\$(date +\%F).tgz --ignore-failed-read ledger prop-ledger espn-ledger fantasy-ledger.json ufc-ledger.json movement odds-history feedback 2>/dev/null; find $BASE/backups -name 'records-*.tgz' -mtime +30 -delete
+17 4 * * * $APP umask 077 && cd $BASE/shared/.cache && tar -czf $BASE/backups/records-\$(date +\%F).tgz --ignore-failed-read ledger prop-ledger espn-ledger fantasy-ledger.json ufc-ledger.json movement odds-history feedback 2>/dev/null; find $BASE/backups -name 'records-*.tgz' -mtime +30 -delete
 EOF
 systemctl daemon-reload
 systemctl enable shadowcrypts >/dev/null
+# New service settings (its sandbox) take effect on a restart. If the site doesn't come back healthy under them
+# within two minutes, the old settings go back and the site restarts on those: never left down.
+if [ "$unit_changed" = 1 ] && systemctl is-active --quiet shadowcrypts; then
+  echo "The site's service settings changed: restarting it to use them..."
+  systemctl restart shadowcrypts
+  healthy=0
+  for _ in $(seq 1 60); do
+    if curl -fs -o /dev/null --max-time 3 http://127.0.0.1:3000/api/health; then healthy=1; break; fi
+    sleep 2
+  done
+  if [ "$healthy" = 1 ]; then
+    echo "The site is back up under the new settings."
+  else
+    echo "The site didn't come back under the new settings: putting the old ones back."
+    install -m 644 /root/shadowcrypts.service.previous "$unit"
+    systemctl daemon-reload
+    systemctl restart shadowcrypts
+  fi
+fi
 
 step "Caddy's settings for $DOMAIN"
 # HTTPS only once the domain points here: Let's Encrypt locks a name out for a while after a few failed
@@ -146,13 +180,51 @@ cat > /etc/cron.d/shadowcrypts-firewall <<'EOF'
 EOF
 echo "$(ufw status | head -1). SSH and port 80 open to all; port 443 $(if ufw status | grep -qE '^443/tcp +ALLOW +Anywhere'; then echo 'open to all'; else echo "only from Cloudflare ($(ufw status | grep -c '# cloudflare$') rules)"; fi)."
 
-step "SSH: keys only, no passwords"
+step "SSH: keys only, no passwords, nothing extra"
 cat > /etc/ssh/sshd_config.d/10-shadowcrypts.conf <<'EOF'
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 PermitRootLogin prohibit-password
+# Logging in and copying files is all it's for: no forwarding of ports, agents or screens.
+X11Forwarding no
+AllowTcpForwarding no
+AllowAgentForwarding no
+MaxAuthTries 3
+LoginGraceTime 30
 EOF
 sshd -t
 systemctl reload ssh
+
+step "fail2ban: an address that keeps failing to log in is shut out for a while"
+# Keys can't be guessed, but robots try all day; this stops them filling the logs and using the connection.
+cat > /etc/fail2ban/jail.d/shadowcrypts.conf <<'EOF'
+[sshd]
+enabled = true
+backend = systemd
+maxretry = 5
+findtime = 10m
+bantime = 1h
+bantime.increment = true
+bantime.maxtime = 1w
+EOF
+systemctl enable fail2ban >/dev/null 2>&1
+systemctl restart fail2ban
+sleep 2
+fail2ban-client status sshd 2>/dev/null | grep -E 'Currently banned|Total failed' | sed 's/^[^A-Z]*//' || echo "fail2ban: starting"
+
+step "Unused accounts"
+# The image's default "ubuntu" login has no password or key and isn't used: switched off for good.
+if id ubuntu >/dev/null 2>&1 && [ ! -s /home/ubuntu/.ssh/authorized_keys ]; then
+  usermod --lock --shell /usr/sbin/nologin --expiredate 1 ubuntu
+  echo "ubuntu: locked"
+fi
+# Helper scripts copied up for one-off checks.
+rm -f /root/remote-*.sh
+
+if [ -f /var/run/reboot-required ]; then
+  # A security update waiting on a restart: tonight at 04:45, when hardly anyone is on (about a minute down).
+  shutdown -r 04:45 "Restarting to finish security updates" >/dev/null 2>&1 || true
+  echo "A security update needs a restart: scheduled for 04:45 tonight (Eastern)."
+fi
 
 step "Done. Next: put the site's data in $BASE/shared/.cache if you have some, then run: update-site"

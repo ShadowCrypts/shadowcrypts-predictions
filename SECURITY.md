@@ -31,6 +31,17 @@ A self-hosted Next.js 16 app: no accounts, no passwords, no payments, no cookies
 
 ## Audit log
 
+**2026-11-15, owner-run penetration test of the live site and server.** Non-destructive: about 90 web checks (secret and source files, path tricks, reflected input in every page and API parameter, open redirects, methods, the `x-middleware-subrequest` bypass, forged host and IP headers, CORS, write endpoints, error output, TLS versions), a rate-limit test with a new forged `X-Forwarded-For` on each of 135 requests, a port check of the origin, and a read-only review of the server. Passed: nothing secret or internal is served, no input is reflected unescaped, no open redirects, the proxy can't be skipped, forged IP headers don't move the rate limit (blocked at request 121) and Cloudflare refuses a forged `CF-Connecting-IP` outright, only ports 22 and 80 answer at the origin (443 is Cloudflare-only), SSH refuses passwords. Found and fixed:
+
+| Finding | Severity | Fix |
+| --- | --- | --- |
+| A kernel security update was installed but waiting on a restart | Medium | Updates that need a restart now get one at 04:45 (`Automatic-Reboot`); this one was scheduled the same night |
+| The site's service sandbox scored 8.4 ("exposed") in `systemd-analyze security` | Low | Read-only system, no devices, kernel or clock access, no capabilities, own address families only, `UMask=0027`: 3.0. Applied with a health check that restores the old settings if the site doesn't come back |
+| About 1,000 failed SSH logins a day from robots (keys only, so none could succeed) | Low | fail2ban bans an address after 5 failures for an hour, longer on repeat; SSH allows 3 tries and no port, agent or X11 forwarding |
+| The image's default `ubuntu` account had passwordless sudo (locked password, no key, never used) | Low | Locked, expired and given no shell |
+| Backups and records were readable by other local accounts | Low | Only the site's user can read `shared/` and `backups/`; backups are written owner-only |
+| Cloudflare accepted TLS 1.0 and 1.1; no SPF or DMARC (anyone could send mail "from" the domain); DNSSEC off | Low | Cloudflare settings: minimum TLS 1.2, `v=spf1 -all` and a `p=reject` DMARC record (the domain sends no mail), DNSSEC on |
+
 **2026-11-11, outside review of the live site.** Found and fixed:
 
 | Finding | Severity | Fix |
