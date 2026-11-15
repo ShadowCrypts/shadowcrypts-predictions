@@ -31,6 +31,18 @@ A self-hosted Next.js 16 app: no accounts, no passwords, no payments, no cookies
 
 ## Audit log
 
+**2026-11-15, second round: trying to take the server.** Every route to code execution or root, attacker-style but non-destructive. Held: the 2025 React Server Components / server-action RCE family ("React2Shell") posted with flight and multipart payloads to 14 kinds of address, including the files the proxy skips (Cloudflare's managed rules answer 403; the proxy answers 405 behind them, as the first round showed); Next.js internal headers (`x-nextjs-data`, `x-invoke-path`, router state, `x-middleware-subrequest`); encoded and double-encoded traversal into `_next/static`, `.next/` and dev-only endpoints; Cloudflare cache poisoning and cache deception; prototype pollution and 9,000-deep nesting in JSON bodies; 14 SSRF disguises on the push endpoint (homoglyphs, userinfo, suffix, fragment, trailing dot, decimal and IPv6 hosts, ports, backslashes); slow inputs (every probe answered in under 0.3 s); oversized headers. Code review found no HTML or code sinks beyond the fixed theme script and escaped JSON-LD, no child processes, and ESPN as the only outbound host. On the server: OpenSSH 9.6p1-3ubuntu13.20 (past regreSSHion and the 2025 fixes), no unusual setuid files, the site's user can't write anywhere root runs things. Found and fixed:
+
+| Finding | Severity | Fix |
+| --- | --- | --- |
+| Node.js was one security release behind (24.22.2, with 24.22.3 out): it comes from nodejs.org, so Ubuntu's automatic updates never patch it | Medium | `node-update.sh` installs the newest 24 release now and every Monday, checksum checked, restarting the site on it and rolling back if it doesn't come up |
+| `update-site` (root) cleared old versions with `ls … \| xargs rm -rf` in a folder the site's user owns: after a compromise of the site, a folder named `x /etc` would have had root delete `/etc` on the next update | Medium | The top folder and the list of versions belong to root; only folders named like a release timestamp are removed, one at a time (tested against that name) |
+| Rate limits keyed IPv6 visitors by full address: one connection's /64 holds billions, a fresh allowance each | Low | IPv6 is keyed by its /64 (`addressKey`) |
+| Caddy's own repository isn't in Ubuntu's automatic updates | Low | Added to them |
+| SSH still offered SHA-1 and 64-bit MACs, NIST curves and group14 key exchange | Low | Modern key exchange (with the post-quantum hybrid), AEAD ciphers and SHA-2 ETM MACs only |
+
+What's left is outside the server: whoever holds the GitHub, Cloudflare, Contabo or email account can change the site without touching any of this, so each should have two-factor sign-in.
+
 **2026-11-15, owner-run penetration test of the live site and server.** Non-destructive: about 90 web checks (secret and source files, path tricks, reflected input in every page and API parameter, open redirects, methods, the `x-middleware-subrequest` bypass, forged host and IP headers, CORS, write endpoints, error output, TLS versions), a rate-limit test with a new forged `X-Forwarded-For` on each of 135 requests, a port check of the origin, and a read-only review of the server. Passed: nothing secret or internal is served, no input is reflected unescaped, no open redirects, the proxy can't be skipped, forged IP headers don't move the rate limit (blocked at request 121) and Cloudflare refuses a forged `CF-Connecting-IP` outright, only ports 22 and 80 answer at the origin (443 is Cloudflare-only), SSH refuses passwords. Found and fixed:
 
 | Finding | Severity | Fix |

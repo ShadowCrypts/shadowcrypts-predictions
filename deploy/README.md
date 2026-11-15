@@ -73,6 +73,7 @@ are kept in `/srv/shadowcrypts/releases`.
 | Nightly backups of the records | `/srv/shadowcrypts/backups` (30 days) |
 | Logs | `journalctl -u shadowcrypts -f`, and the last build in `/var/log/shadowcrypts-build.log` |
 | Firewall | `ufw status`; port 443 follows the domain on or off Cloudflare (`shadowcrypts-firewall`) |
+| Node.js updates | `shadowcrypts-node-update` (Mondays 05:40, log in `/var/log/shadowcrypts-node-update.log`): Ubuntu's own updates don't cover it |
 | Visitor counts | `cd /srv/shadowcrypts/current && npm run visits` |
 | Feedback messages | `cd /srv/shadowcrypts/current && npm run feedback` (kept in `shared/.cache/feedback`, in the nightly backup) |
 

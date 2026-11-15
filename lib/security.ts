@@ -97,8 +97,30 @@ export function clientKey(headers: Headers, trustHops = 0) {
     .map((s) => s.trim())
     .filter(Boolean);
   if (!chain.length) return 'unknown';
-  if (trustHops > 0) return chain[Math.max(0, chain.length - trustHops)];
-  return chain[0];
+  return addressKey(trustHops > 0 ? chain[Math.max(0, chain.length - trustHops)] : chain[0]);
+}
+
+/**
+ * One key per visitor's connection: an IPv4 address as it is, an IPv6 address by its first 64 bits. A home or
+ * phone connection is handed a whole /64 (billions of addresses), so keying on the full address would let one
+ * visitor take a fresh allowance with every request.
+ */
+export function addressKey(address: string) {
+  const ip = address.replace(/^\[|\](:\d+)?$/g, '').split('%')[0];
+  if (!ip.includes(':')) return address;
+  // An IPv4 address written the IPv6 way ("::ffff:203.0.113.9") is still that IPv4 address.
+  const mapped = ip.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i);
+  if (mapped) return mapped[1];
+  const [head, tail] = ip.split('::');
+  const left = head ? head.split(':') : [];
+  const right = tail !== undefined && tail ? tail.split(':') : [];
+  if (tail === undefined && left.length !== 8) return address;
+  const groups = [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right];
+  if (groups.length !== 8 || groups.some((g) => !/^[0-9a-f]{1,4}$/i.test(g))) return address;
+  return `${groups
+    .slice(0, 4)
+    .map((g) => parseInt(g, 16).toString(16))
+    .join(':')}::/64`;
 }
 
 export type Verdict = { ok: boolean; limit: number; remaining: number; resetSeconds: number };

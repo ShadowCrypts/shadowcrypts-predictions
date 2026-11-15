@@ -17,6 +17,8 @@ as_app() { runuser -u "$APP" -- "$@"; }
 healthy() { curl -fs -o /dev/null --max-time 5 http://127.0.0.1:3000/api/health 2>/dev/null; }
 
 echo "== Getting the latest version from GitHub"
+# Root makes the version's folder (the list of versions is root's) and hands it to the site's user to fill.
+install -d -o "$APP" -g "$APP" -m 755 "$NEW"
 as_app git clone --quiet --depth 1 "$REPO" "$NEW"
 # The settings now (the build reads SITE_URL); the data folder only after building: the bundler follows
 # paths into .cache and refuses a link that leads outside the project.
@@ -42,8 +44,10 @@ systemctl restart shadowcrypts
 for _ in $(seq 1 45); do healthy && break; sleep 2; done
 
 if healthy; then
-  # Keep the three newest versions.
-  ls -1dt "$BASE"/releases/*/ | tail -n +4 | xargs -r rm -rf
+  # Keep the three newest versions. Only folders named like the ones this makes (a date and time, which sort
+  # in age order) are ever removed, one by one: no name can widen what root deletes.
+  find "$BASE/releases" -mindepth 1 -maxdepth 1 -type d -regextype posix-extended -regex '.*/[0-9]{8}-[0-9]{6}' -printf '%f\n' |
+    sort -r | tail -n +4 | while read -r old; do rm -rf -- "${BASE:?}/releases/$old"; done
   echo "== Done: the website is running the new version."
 else
   echo "The new version didn't start. Going back to the one before."

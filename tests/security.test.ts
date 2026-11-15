@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { readCapped } from '../lib/http';
-import { clientKey, contentSecurityPolicy, fromOwnPages, isCostlyImage, makeNonce, RateLimiter } from '../lib/security';
+import { addressKey, clientKey, contentSecurityPolicy, fromOwnPages, isCostlyImage, makeNonce, RateLimiter } from '../lib/security';
 
 describe('content security policy', () => {
   it('lets scripts run only from the site or with the page’s nonce', () => {
@@ -99,5 +99,22 @@ describe('client keys', () => {
     assert.equal(clientKey(h('6.6.6.6, 203.0.113.9'), 1), '203.0.113.9');
     assert.equal(clientKey(h('6.6.6.6, 198.51.100.4, 10.0.0.2'), 2), '198.51.100.4');
     assert.equal(clientKey(h('203.0.113.9'), 3), '203.0.113.9');
+  });
+
+  it('counts an IPv6 visitor by their /64, so rotating addresses inside it gains nothing', () => {
+    assert.equal(addressKey('2001:db8:1:2:aaaa:bbbb:cccc:dddd'), '2001:db8:1:2::/64');
+    assert.equal(addressKey('2001:db8:1:2::1'), '2001:db8:1:2::/64');
+    assert.equal(addressKey('2001:DB8:0001:0002:0:0:0:ffff'), '2001:db8:1:2::/64');
+    assert.equal(addressKey('2001:db8::1'), '2001:db8:0:0::/64');
+    assert.equal(addressKey('::1'), '0:0:0:0::/64');
+    assert.equal(addressKey('[2001:db8:1:2::5]:443'), '2001:db8:1:2::/64');
+    assert.equal(addressKey('fe80::1%eth0'), 'fe80:0:0:0::/64');
+    // IPv4, IPv4 written as IPv6, and anything that isn't an address, as they are.
+    assert.equal(addressKey('203.0.113.9'), '203.0.113.9');
+    assert.equal(addressKey('::ffff:203.0.113.9'), '203.0.113.9');
+    assert.equal(addressKey('not:an:address'), 'not:an:address');
+    assert.equal(addressKey('unknown'), 'unknown');
+    // Through the proxy chain too.
+    assert.equal(clientKey(h('6.6.6.6, 2001:db8:1:2:dead:beef:0:1, 172.70.0.1'), 2), '2001:db8:1:2::/64');
   });
 });

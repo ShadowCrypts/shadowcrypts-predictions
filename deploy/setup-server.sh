@@ -34,6 +34,10 @@ cat > /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
 EOF
+# Caddy comes from its own repository, which automatic updates skip unless told: its fixes come in too.
+cat > /etc/apt/apt.conf.d/51shadowcrypts-origins <<'EOF'
+Unattended-Upgrade::Origins-Pattern { "origin=cloudsmith/caddy/stable"; };
+EOF
 # An update that needs a restart (a new kernel) gets one, at a quiet hour, so fixes don't sit waiting.
 cat > /etc/apt/apt.conf.d/52shadowcrypts-reboot <<'EOF'
 Unattended-Upgrade::Automatic-Reboot "true";
@@ -54,17 +58,15 @@ if ! swapon --show | grep -q '/swapfile'; then
 fi
 swapon --show
 
-step "Node.js 24 (official build from nodejs.org, checksum checked)"
-if ! node --version 2>/dev/null | grep -q '^v24\.'; then
-  tmp="$(mktemp -d)"
-  curl -fsSL -o "$tmp/SHASUMS256.txt" https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt
-  file="$(grep -oE 'node-v24\.[0-9]+\.[0-9]+-linux-x64\.tar\.xz' "$tmp/SHASUMS256.txt" | head -1)"
-  curl -fsSL -o "$tmp/$file" "https://nodejs.org/dist/latest-v24.x/$file"
-  (cd "$tmp" && grep " $file\$" SHASUMS256.txt | sha256sum -c -)
-  tar -xJf "$tmp/$file" -C /usr/local --strip-components=1 --no-same-owner \
-    --exclude='CHANGELOG.md' --exclude='LICENSE' --exclude='README.md'
-  rm -rf "$tmp"
-fi
+step "Node.js 24 (official build from nodejs.org, checksum checked), kept on its newest release"
+# Ubuntu's automatic updates don't cover Node: node-update.sh brings it to the newest 24 release now and
+# every Monday (restarting the site on it, and going back if the site doesn't come up).
+install -m 755 "$HERE/node-update.sh" /usr/local/sbin/shadowcrypts-node-update
+/usr/local/sbin/shadowcrypts-node-update || echo "The Node update didn't take: still on $(node --version)."
+cat > /etc/cron.d/shadowcrypts-node-update <<'EOF'
+# Mondays at 05:40: the newest Node 24 release if there's one (security fixes come this way).
+40 5 * * 1 root /usr/local/sbin/shadowcrypts-node-update >> /var/log/shadowcrypts-node-update.log 2>&1
+EOF
 echo "node $(node --version), npm $(npm --version)"
 
 step "Caddy (the web server: HTTPS certificates are automatic), from Caddy's official repository"
@@ -97,7 +99,12 @@ if grep -q '^TRUST_PROXY_HOPS=1$' "$BASE/shared/.env"; then
   if systemctl is-active --quiet shadowcrypts; then systemctl restart shadowcrypts; fi
 fi
 chmod 640 "$BASE/shared/.env"
-chown -R "$APP:$APP" "$BASE"
+chown -R "$APP:$APP" "$BASE/shared" "$BASE/backups"
+# The top folder and the list of versions belong to root: update-site (which runs as root) switches versions
+# and clears old ones there, so the site's own user mustn't be able to plant anything in them. Each version's
+# files are the site user's (it builds them).
+chown root:root "$BASE" "$BASE/releases"
+chmod 755 "$BASE" "$BASE/releases"
 # The site's data and backups (feedback can hold a way to reach someone) are for the site's user only.
 chmod -R o-rwx "$BASE/shared" "$BASE/backups"
 echo "$BASE: releases/ (each version of the site), shared/.cache (its data), shared/.env (settings), backups/"
@@ -191,6 +198,10 @@ AllowTcpForwarding no
 AllowAgentForwarding no
 MaxAuthTries 3
 LoginGraceTime 30
+# Only modern key exchange, ciphers and checksums (Windows' own SSH client has all of these).
+KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
 EOF
 sshd -t
 systemctl reload ssh
