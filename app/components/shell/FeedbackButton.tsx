@@ -12,6 +12,8 @@ export function FeedbackButton() {
     <Link
       href={href}
       prefetch={false}
+      // One address per page it's on: not something for search engines to follow (robots.txt keeps them out too).
+      rel="nofollow"
       className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-raised px-3 py-1.5 text-xs font-semibold text-ink ring-1 ring-line transition hover:bg-line"
     >
       <MessageSquare className="h-3.5 w-3.5" aria-hidden />
