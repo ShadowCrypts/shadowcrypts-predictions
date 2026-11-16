@@ -31,6 +31,12 @@ A self-hosted Next.js 16 app: no accounts, no passwords, no payments, no cookies
 
 ## Audit log
 
+**2026-11-15, fourth round: trying to take the site offline.** Bounded tests, each timed against a normal visitor's page load, not floods (a real flood from thousands of machines is Cloudflare's to absorb, and testing that from one is neither meaningful nor fair to the networks in between). The memory crash from round three, retried on the live server with the fix in: 2,000 old NBA and NHL game pages at 4 a second, the most a client is allowed, held the site's memory at 1.28–1.31 GB from start to end while a normal visitor's page kept loading in 0.16–0.28 s. Found and fixed:
+
+| Finding | Severity | Fix |
+| --- | --- | --- |
+| Port 80 at the origin was open to everyone, and Caddy's automatic HTTP-to-HTTPS server there doesn't take the Caddyfile's timeouts: 40 connections that never finished a request were all still held after 60 s, so one client could pile up open connections for good | Low | While the domain is proxied, port 80 takes only Cloudflare's addresses, like 443 (`firewall.sh`). Let's Encrypt's checks come through Cloudflare; Cloudflare only ever forwards whole requests |
+
 **2026-11-15, third round: a targeted attacker who has read the code.** Held: JavaScript's built-in names (`__proto__`, `constructor`, `toString` …) in every query parameter a page or API reads (114 probes, no errors), the service worker (same-origin only; notification links must be paths on this site), the CSP (no loopholes), and hand-written requests to the origin's port 80 (Host spoofing, absolute-form and `CONNECT` requests, CL/TE smuggling: Caddy only ever redirects to HTTPS there and never reaches the app). Found and fixed:
 
 | Finding | Severity | Fix |

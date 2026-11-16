@@ -14,8 +14,9 @@
 			idle 2m
 		}
 	}
-	# Certificates are proven over port 80 only. Behind Cloudflare, the firewall lets only Cloudflare reach
-	# port 443 (firewall.sh), so Let's Encrypt's check over 443 could never get through.
+	# Certificates are proven over port 80 only (Let's Encrypt's check arrives through Cloudflare, which
+	# passes plain-HTTP visits on as they came). Its check over 443 would need the certificate presented
+	# to Let's Encrypt itself, which Cloudflare's own certificate stands in front of.
 	cert_issuer acme {
 		disable_tlsalpn_challenge
 	}

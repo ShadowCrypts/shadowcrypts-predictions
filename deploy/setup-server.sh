@@ -174,9 +174,9 @@ fi
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
 systemctl reload caddy || systemctl restart caddy
 
-step "Firewall: only SSH, HTTP and HTTPS (HTTPS only from Cloudflare while the domain goes through it)"
+step "Firewall: only SSH, HTTP and HTTPS (the web ports only from Cloudflare while the domain goes through it)"
 ufw allow OpenSSH >/dev/null
-ufw allow 80/tcp >/dev/null
+# Ports 80 and 443 are the firewall script's: open to everyone, or only to Cloudflare while the domain is proxied.
 ufw --force enable >/dev/null
 sed -e "s#__DOMAIN__#$DOMAIN#" "$HERE/firewall.sh" > /usr/local/sbin/shadowcrypts-firewall
 chmod 755 /usr/local/sbin/shadowcrypts-firewall
@@ -185,7 +185,7 @@ chmod 755 /usr/local/sbin/shadowcrypts-firewall
 cat > /etc/cron.d/shadowcrypts-firewall <<'EOF'
 */10 * * * * root /usr/local/sbin/shadowcrypts-firewall >/dev/null 2>&1
 EOF
-echo "$(ufw status | head -1). SSH and port 80 open to all; port 443 $(if ufw status | grep -qE '^443/tcp +ALLOW +Anywhere'; then echo 'open to all'; else echo "only from Cloudflare ($(ufw status | grep -c '# cloudflare$') rules)"; fi)."
+echo "$(ufw status | head -1). SSH open to all; ports 80 and 443 $(if ufw status | grep -qE '^443/tcp +ALLOW +Anywhere'; then echo 'open to all'; else echo "only from Cloudflare ($(ufw status | grep -c '# cloudflare$') rules)"; fi)."
 
 step "SSH: keys only, no passwords, nothing extra"
 cat > /etc/ssh/sshd_config.d/10-shadowcrypts.conf <<'EOF'

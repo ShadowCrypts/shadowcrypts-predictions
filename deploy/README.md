@@ -46,10 +46,10 @@ this GitHub repository. Any provider works; it needs about 1 GB of memory free f
    **DNS → Settings → DNSSEC**, and, if the domain sends no email, add two TXT records so nobody can send mail
    pretending to be it: `@` → `v=spf1 -all` and `_dmarc` → `v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s`.
 
-   With the proxy on, the firewall lets only Cloudflare's addresses reach port 443, so nobody can get
-   around Cloudflare by using the server's own address (`firewall.sh`, run every 10 minutes). Port 80
-   stays open for Let's Encrypt's certificate checks and redirects to HTTPS. Turning the proxy off again
-   (grey cloud) is fine: within 10 minutes the firewall notices and opens 443 to everyone.
+   With the proxy on, the firewall lets only Cloudflare's addresses reach ports 80 and 443, so nobody can
+   get around Cloudflare by using the server's own address (`firewall.sh`, run every 10 minutes). Let's
+   Encrypt's certificate checks come through Cloudflare on port 80 like any visitor. Turning the proxy off
+   again (grey cloud) is fine: within 10 minutes the firewall notices and opens both ports to everyone.
 
 ## Updating
 
