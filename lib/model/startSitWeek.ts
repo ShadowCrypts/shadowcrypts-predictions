@@ -3,7 +3,7 @@
 import { getBoxScores, getNflSkillBoxes } from '../boxscores';
 import type { Game } from '../espn';
 import type { LeagueConfig } from '../leagues';
-import { actualLines, fantasyPoints, projectedPoints, weekEnd, type FantasyPosition } from './fantasy';
+import { actualLines, FANTASY_RANGE, fantasyPoints, projectedPoints, weekEnd, type FantasyPosition } from './fantasy';
 import { fantasyBoard, type FantasyRow } from './fantasyBoard';
 import { readFantasyLedger } from './fantasyLedger';
 import type { LeagueModel } from './index';
@@ -17,6 +17,8 @@ export type StartSitWeek = {
   week: number | null;
   start: string;
   end: string;
+  /** Everyone on this week's board, for player pages' fantasy box. */
+  rows: FantasyRow[];
   picks: Record<FantasyPosition, { start: StartSitEntry[]; sit: StartSitEntry[] }>;
   /** Regular starters on the injury report this week, by position rank. */
   injuries: { row: FantasyRow; rank: number }[];
@@ -65,6 +67,62 @@ async function gradeLastWeek(league: LeagueConfig, model: LeagueModel, thisWeekE
   return { week: nflWeekNumber(seasonDates(model), last), grade: gradeStartSit(picks, (id) => scored.get(id) ?? null) };
 }
 
+/**
+ * The week, worked out once per model build and shared by every page that asks (the start/sit page and every
+ * NFL player page's fantasy box), rather than once a request.
+ */
+const weeks = new WeakMap<LeagueModel, Promise<StartSitWeek | null>>();
+export function startSitWeekFor(league: LeagueConfig, model: LeagueModel): Promise<StartSitWeek | null> {
+  let week = weeks.get(model);
+  if (!week) {
+    week = startSitWeek(league, model).catch(() => null);
+    weeks.set(model, week);
+  }
+  return week;
+}
+
+/** One player's fantasy week, for his page: his projection and its likely range, where it ranks, and the start/sit call. */
+export type FantasyCard = {
+  week: number | null;
+  row: FantasyRow;
+  points: number;
+  range: [number, number];
+  /** Rank at his position this week by expected points (discounted for the chance he sits), and by season average. */
+  weekRank: number;
+  seasonRank: number | null;
+  average: number | null;
+  recent: number | null;
+  verdict: 'start' | 'sit' | null;
+  gap: number | null;
+};
+
+export function fantasyCard(week: StartSitWeek, id: string): FantasyCard | null {
+  const row = week.rows.find((r) => r.id === id);
+  if (!row) return null;
+  const points = projectedPoints(row.projected, row.position);
+  const [lo, hi] = FANTASY_RANGE[row.position];
+  const same = week.rows.filter((r) => r.position === row.position);
+  const expected = (r: FantasyRow) => projectedPoints(r.projected, r.position) * r.available;
+  const weekRank = same.filter((r) => expected(r) > expected(row)).length + 1;
+  const average = row.season ? fantasyPoints(row.season) : null;
+  const seasoned = same.filter((r) => r.season && r.games >= MIN_GAMES);
+  const seasonRank = average !== null && row.games >= MIN_GAMES ? seasoned.filter((r) => fantasyPoints(r.season!) > average).length + 1 : null;
+  const { start, sit } = week.picks[row.position];
+  const verdict = start.some((e) => e.id === id) ? 'start' : sit.some((e) => e.id === id) ? 'sit' : null;
+  return {
+    week: week.week,
+    row,
+    points,
+    range: [points * lo, points * hi],
+    weekRank,
+    seasonRank,
+    average,
+    recent: row.recent ? fantasyPoints(row.recent) : null,
+    verdict,
+    gap: average === null ? null : points - average
+  };
+}
+
 export async function startSitWeek(league: LeagueConfig, model: LeagueModel, now = new Date()): Promise<StartSitWeek | null> {
   const board = await fantasyBoard(league, model, now);
   if (!board?.rows.length) return null;
@@ -88,6 +146,7 @@ export async function startSitWeek(league: LeagueConfig, model: LeagueModel, now
     week: nflWeekNumber(seasonDates(model), board.end),
     start: board.start,
     end: board.end,
+    rows: board.rows,
     picks,
     injuries,
     // Anyone a lineup might hold: projected 3 points or more (deep backups only clutter the picker).

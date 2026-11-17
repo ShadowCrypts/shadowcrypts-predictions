@@ -38,8 +38,8 @@ function PlayerSelect({ id, label, players, value, onChange }: { id: string; lab
  * Who should I start? Two players this week, and how often the one projected higher outscored the other when
  * they were this far apart (the start/sit backtest: about 890,000 pairs since 2023, both playing).
  */
-export function StartSitPicker({ players }: { players: PickerPlayer[] }) {
-  const [left, setLeft] = useState('');
+export function StartSitPicker({ players, initial }: { players: PickerPlayer[]; initial?: string }) {
+  const [left, setLeft] = useState(initial ?? '');
   const [right, setRight] = useState('');
   const a = players.find((p) => p.id === left);
   const b = players.find((p) => p.id === right);

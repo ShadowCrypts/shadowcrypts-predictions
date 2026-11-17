@@ -6,20 +6,20 @@ import { LEAGUES } from '../../../lib/leagues';
 import { getLeagueModel } from '../../../lib/model';
 import { FANTASY_CHECK, type FantasyPosition } from '../../../lib/model/fantasy';
 import { START_BANDS } from '../../../lib/model/startSit';
-import { startSitWeek, type StartSitEntry } from '../../../lib/model/startSitWeek';
+import { startSitWeekFor, type StartSitEntry } from '../../../lib/model/startSitWeek';
 import { formatLongDay } from '../../../lib/time';
 import { EmptyState, PageHeader, Section } from '../../components/Section';
 import { StartSitPicker } from '../../components/StartSitPicker';
 
 export const dynamic = 'force-dynamic';
 
-type Params = { params: Promise<{ league: string }> };
+type Params = { params: Promise<{ league: string }>; searchParams?: Promise<{ a?: string }> };
 
 const POSITION_NAMES: Record<FantasyPosition, string> = { QB: 'Quarterbacks', RB: 'Running backs', WR: 'Wide receivers', TE: 'Tight ends' };
 
 async function load() {
   const model = await getLeagueModel('nfl');
-  return { model, week: await startSitWeek(LEAGUES.nfl, model) };
+  return { model, week: await startSitWeekFor(LEAGUES.nfl, model) };
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -57,9 +57,12 @@ function Entry({ e, kind }: { e: StartSitEntry; kind: 'start' | 'sit' }) {
   );
 }
 
-export default async function StartSitPage({ params }: Params) {
+export default async function StartSitPage({ params, searchParams }: Params) {
   if ((await params).league !== 'nfl') notFound();
   const { week } = await load();
+  // From a player's page: "compare him with anyone" opens the picker with him chosen.
+  const first = (await searchParams)?.a;
+  const initial = first && /^\d{1,15}$/.test(first) && week?.players.some((p) => p.id === first) ? first : undefined;
   const latest = FANTASY_CHECK[FANTASY_CHECK.length - 1];
   const name = week?.week ? `Week ${week.week}` : 'This week';
 
@@ -86,8 +89,8 @@ export default async function StartSitPage({ params }: Params) {
             </p>
           )}
 
-          <Section title="Who should I start?" subtitle="Any two players on this week's board, with how often that call has come out right.">
-            <StartSitPicker players={week.players} />
+          <Section id="picker" title="Who should I start?" subtitle="Any two players on this week's board, with how often that call has come out right.">
+            <StartSitPicker players={week.players} initial={initial} />
           </Section>
 
           {(['QB', 'RB', 'WR', 'TE'] as FantasyPosition[]).map((pos) => {

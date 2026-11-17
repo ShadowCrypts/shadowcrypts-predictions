@@ -1,6 +1,50 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { FANTASY_RANGE, fantasyPoints, type FantasyLine } from '../lib/model/fantasy';
+import type { FantasyRow } from '../lib/model/fantasyBoard';
 import { gradeStartSit, meaningfulGap, nflWeekNumber, pickStartSit, type StartSitCandidate } from '../lib/model/startSit';
+import { fantasyCard, type StartSitWeek } from '../lib/model/startSitWeek';
+
+describe('a player page’s fantasy box', () => {
+  // QBs whose lines score exactly `points` PPR (a 25-yard pass is a point).
+  const line = (points: number): FantasyLine => ({ passYds: points * 25, passTd: 0, passInt: 0, rushYds: 0, recYds: 0, rec: 0, tds: 0 });
+  const row = (id: string, projected: number, average: number | null, available = 1): FantasyRow => ({
+    id,
+    name: id,
+    position: 'QB',
+    team: { id: '1', abbr: 'AAA', logo: null, color: '#000' },
+    opponent: 'BBB',
+    home: true,
+    gameId: 'g',
+    start: '2026-11-19T01:15:00Z',
+    available,
+    status: null,
+    projected: line(projected),
+    recent: average === null ? null : line(average),
+    season: average === null ? null : line(average),
+    games: average === null ? 0 : 9
+  });
+  const rows = [row('a', 22, 20), row('b', 18, 21), row('c', 16, 12), row('d', 25, 24, 0.5)];
+  const week = { week: 11, rows, picks: { QB: { start: [{ id: 'c' }], sit: [] }, RB: { start: [], sit: [] }, WR: { start: [], sit: [] }, TE: { start: [], sit: [] } } } as unknown as StartSitWeek;
+
+  it('ranks him at his position this week by expected points, and by season average', () => {
+    const card = fantasyCard(week, 'a')!;
+    assert.equal(card.points, 22);
+    assert.equal(card.weekRank, 1, 'd projects higher but is only 50% to play: 12.5 expected');
+    assert.equal(card.seasonRank, 3);
+    assert.deepEqual(
+      card.range.map((x) => Number(x.toFixed(2))),
+      FANTASY_RANGE.QB.map((f) => Number((22 * f).toFixed(2)))
+    );
+    assert.equal(fantasyPoints(card.row.projected), 22);
+  });
+
+  it('says which list he’s on, or neither', () => {
+    assert.equal(fantasyCard(week, 'c')!.verdict, 'start');
+    assert.equal(fantasyCard(week, 'b')!.verdict, null);
+    assert.equal(fantasyCard(week, 'nobody'), null);
+  });
+});
 
 // 40 backs with season averages from 25 down to 5.5, all projected at their average unless set otherwise.
 const backs = (overrides: Record<number, Partial<StartSitCandidate>> = {}): StartSitCandidate[] =>

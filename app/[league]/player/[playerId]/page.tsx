@@ -16,6 +16,8 @@ import { currentTeams } from '../../../../lib/model/playerIndex';
 import { liveGameOf, nextGameRow, PlayerGame, playerLog } from '../../../../lib/model/playerLog';
 import { propEngine } from '../../../../lib/model/propEngines';
 import { playerSplits } from '../../../../lib/model/splits';
+import { fantasyCard, startSitWeekFor } from '../../../../lib/model/startSitWeek';
+import { FantasyCardBox } from '../../../components/FantasyCardBox';
 import { marketLabel, PropMarket } from '../../../../lib/props';
 import { formatShortDate, renderedAt } from '../../../../lib/time';
 import { AutoRefresh } from '../../../components/AutoRefresh';
@@ -183,6 +185,9 @@ export default async function PlayerPage(props: Params) {
       : []),
     { label: `Average, these ${log.games.length} games`, games: log.games }
   ];
+  // NFL: his fantasy week, from the week's board (worked out once per model build, shared by every player page).
+  const fantasyWeek = league.id === 'nfl' ? await startSitWeekFor(league, model) : null;
+  const fantasy = fantasyWeek ? fantasyCard(fantasyWeek, log.id) : null;
   const vsLine = columns
     .map((m) => {
       const lined = log.games.filter((g) => g.lines[m] && g.stats[m] !== undefined && g.stats[m] !== g.lines[m]!.line);
@@ -343,6 +348,8 @@ export default async function PlayerPage(props: Params) {
           </EmptyState>
         )}
       </Section>
+
+      {fantasy && <FantasyCardBox card={fantasy} />}
 
       {next?.row && nextGame && lined && (
         <Section title="Any line" subtitle="The chance he clears other lines next game, like the alternate lines books sell (25+ points and so on).">

@@ -193,6 +193,12 @@ async function main() {
     const startSit = await page('/nfl/start-sit');
     check("start/sit page names the week and has the picker", /start &#x27;em, sit &#x27;em|start 'em, sit 'em/i.test(startSit) && startSit.includes('Who should I start?'));
     check('start/sit is football only', (await get('/nba/start-sit')).response.status === 404);
+    // A player on this week's board has the fantasy box on his page, with the way into the picker.
+    const listed = startSit.match(/href="\/nfl\/player\/(\d+)"/)?.[1];
+    if (listed) {
+      const player = await page(`/nfl/player/${listed}`);
+      check('NFL player page has his fantasy week', player.includes('Fantasy this week') && player.includes(`/nfl/start-sit?a=${listed}`));
+    }
   }
   // UFC: the section, and an event, a fight and a fighter from it.
   {
