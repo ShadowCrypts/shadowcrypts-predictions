@@ -40,6 +40,11 @@ export default async function FantasyPage({ params }: Params) {
       </Link>
       <PageHeader eyebrow={board ? `NFL · Week of ${formatLongDay(board.start)}` : 'NFL'} title="Fantasy rankings">
         <p>Projected points for this week&apos;s games, from the same player model behind our props. Ranked by points, discounted for the chance he sits. Tap + on two players to compare them.</p>
+        <p className="mt-2">
+          <Link href="/nfl/start-sit" className="font-semibold text-accent-strong hover:underline">
+            This week&apos;s start &apos;em, sit &apos;em →
+          </Link>
+        </p>
       </PageHeader>
       {board?.rows.length ? (
         <>

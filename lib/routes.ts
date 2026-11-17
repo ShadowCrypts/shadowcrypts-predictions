@@ -58,7 +58,7 @@ export function isKnownPage(pathname: string) {
   if (!(LEAGUE_IDS as string[]).includes(first)) return false;
   if (rest.length === 0) return true;
   // (Fantasy is football only; the page itself says so with a 404.)
-  if (rest.length === 1) return rest[0] === 'players' || rest[0] === 'compare' || rest[0] === 'playoffs' || rest[0] === 'fantasy' || rest[0] === 'injuries' || rest[0] === 'standings';
+  if (rest.length === 1) return ['players', 'compare', 'playoffs', 'fantasy', 'start-sit', 'injuries', 'standings'].includes(rest[0]);
   const [kind, id, extra] = rest;
   if ((kind !== 'game' && kind !== 'team' && kind !== 'player') || !ID.test(id)) return false;
   return rest.length === 2 || (rest.length === 3 && extra === 'opengraph-image');

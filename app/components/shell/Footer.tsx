@@ -27,6 +27,7 @@ const COLUMNS = [
       { href: '/nba/compare', label: 'Compare players' },
       { href: '/nfl/playoffs', label: 'Playoff machine' },
       { href: '/nfl/fantasy', label: 'Fantasy rankings' },
+      { href: '/nfl/start-sit', label: "Start 'em, sit 'em" },
       { href: '/nba/injuries', label: 'Injury report' },
       { href: '/props', label: 'Player props' },
       { href: '/parlay', label: 'Parlay builder' },

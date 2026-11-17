@@ -188,6 +188,12 @@ async function main() {
     const { response } = await get(path);
     check(`${path} says how long to keep it`, /^(public, max-age=\d+|no-store)$/.test(response.headers.get('cache-control') ?? ''), response.headers.get('cache-control') ?? 'missing');
   }
+  // Start 'em, sit 'em: NFL only, numbered by week, with the picker.
+  {
+    const startSit = await page('/nfl/start-sit');
+    check("start/sit page names the week and has the picker", /start &#x27;em, sit &#x27;em|start 'em, sit 'em/i.test(startSit) && startSit.includes('Who should I start?'));
+    check('start/sit is football only', (await get('/nba/start-sit')).response.status === 404);
+  }
   // UFC: the section, and an event, a fight and a fighter from it.
   {
     const ufc = await page('/ufc');

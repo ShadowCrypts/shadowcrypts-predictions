@@ -33,6 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${url}/nhl/players`, changeFrequency: 'daily', priority: 0.5 },
     ...(['nba', 'nfl', 'nhl'] as const).map((id) => ({ url: `${url}/${id}/compare`, changeFrequency: 'weekly' as const, priority: 0.4 })),
     { url: `${url}/nfl/fantasy`, changeFrequency: 'daily', priority: 0.8 },
+    { url: `${url}/nfl/start-sit`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     ...(['nfl', 'nba', 'nhl', 'mlb'] as const).map((id) => ({ url: `${url}/${id}/playoffs`, changeFrequency: 'daily' as const, priority: 0.7 })),
     ...(['nfl', 'nba', 'nhl', 'mlb'] as const).map((id) => ({ url: `${url}/${id}/injuries`, changeFrequency: 'daily' as const, priority: 0.7 })),
     ...(['nfl', 'nba', 'nhl', 'mlb'] as const).map((id) => ({ url: `${url}/${id}/standings`, changeFrequency: 'daily' as const, priority: 0.8 })),

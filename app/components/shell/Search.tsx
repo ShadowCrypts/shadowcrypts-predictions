@@ -60,6 +60,7 @@ const PAGES: Item[] = [
   { key: 'p-injuries-mlb', href: '/mlb/injuries', title: 'MLB injury report', detail: "Who's out, and what each absence costs in the forecast" },
   { key: 'p-injuries-nhl', href: '/nhl/injuries', title: 'NHL injury report', detail: "Who's out, and what each absence costs in the forecast" },
   { key: 'p-fantasy', href: '/nfl/fantasy', title: 'Fantasy football rankings', detail: 'Projected points this week, PPR, half PPR or standard' },
+  { key: 'p-start-sit', href: '/nfl/start-sit', title: "Start 'em, sit 'em", detail: 'This week’s start/sit calls, and a who-should-I-start picker' },
   { key: 'p-machine-nfl', href: '/nfl/playoffs', title: 'NFL playoff machine', detail: 'Pick winners and watch every team\'s playoff chances change' },
   { key: 'p-machine-nba', href: '/nba/playoffs', title: 'NBA playoff machine', detail: 'Pick winners and watch every team\'s playoff chances change' },
   { key: 'p-machine-nhl', href: '/nhl/playoffs', title: 'NHL playoff machine', detail: 'Pick winners and watch every team\'s playoff chances change' },
