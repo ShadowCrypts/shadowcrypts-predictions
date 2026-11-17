@@ -201,6 +201,13 @@ async function main() {
     if (fightId) {
       const fight = await page(`/ufc/fight/${fightId}`);
       check('UFC fight page has the tale of the tape', fight.includes('Tale of the tape') && /"@type":"SportsEvent"/.test(fight));
+      const og = fight.match(/<meta property="og:image" content="[^"]*?(\/ufc\/fight\/\d+\/opengraph-image[^"]*)"/)?.[1];
+      check('UFC fight page names its share image', !!og);
+      if (og) {
+        const image = await fetch(`${BASE}${og.replace(/&amp;/g, '&')}`);
+        const bytes = (await image.arrayBuffer()).byteLength;
+        check('UFC fight share image renders', image.status === 200 && image.headers.get('content-type') === 'image/png' && bytes > 10_000, `${image.status} ${bytes} bytes`);
+      }
     }
     if (fighterId) check('UFC fighter page has the fight history', (await page(`/ufc/fighter/${fighterId}`)).includes('UFC record'));
     // A well-formed id nothing matches: a 404, drawn once the page's scripts run (like an unknown game).
@@ -326,6 +333,8 @@ async function main() {
   check('CSP report wrong type → 415', (await report('{}', 'text/plain')).response.status === 415);
   check('CSP report oversize → 413', (await report(JSON.stringify({ 'csp-report': { pad: 'x'.repeat(20_000) } }))).response.status === 413);
 
+  const indexNowKeyFile = await get('/.well-known/indexnow.txt');
+  check('IndexNow key published', indexNowKeyFile.response.status === 200 && /^[a-zA-Z0-9-]{8,128}$/.test(indexNowKeyFile.body.trim()), indexNowKeyFile.body.slice(0, 40));
   for (const path of ['/robots.txt', '/sitemap.xml', '/manifest.webmanifest', '/icon', '/brand-icon/192']) {
     const { response } = await get(path);
     check(`${path} → 200`, response.status === 200, `got ${response.status}`);

@@ -136,7 +136,8 @@ export async function generateMetadata(props: Params): Promise<Metadata> {
         .join(', ')
     : '';
   return {
-    title: next ? `${data.log.name} props, ${next.game.away.shortName} vs ${next.game.home.shortName}, ${formatShortDate(next.game.date)}` : `${data.log.name} props`,
+    // "Stats" too: far more people search a player's stats than his props, and this page has both.
+    title: next ? `${data.log.name} props and stats, ${next.game.away.shortName} vs ${next.game.home.shortName}, ${formatShortDate(next.game.date)}` : `${data.log.name} stats, game log and props`,
     description: next && lines
       ? `${data.log.name}'s lines for ${next.game.away.abbr} @ ${next.game.home.abbr}: ${lines}, with our projection, the real chance of each over and his recent games against the line.`
       : `${data.log.name}'s projections, prop lines and recent games against the line.`

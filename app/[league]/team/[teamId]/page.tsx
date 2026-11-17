@@ -60,7 +60,10 @@ async function load({ params }: Params) {
 export async function generateMetadata(props: Params): Promise<Metadata> {
   const data = await load(props).catch(() => null);
   if (!data) return {};
-  return { title: `${data.team.name} predictions`, description: `${data.team.name} forecasts, Elo rating history, injuries and how the model has done on their games.` };
+  return {
+    title: `${data.team.name} predictions, schedule and stats`,
+    description: `${data.team.name} win chances for every coming game, team stats, injuries, Elo rating history and how the forecasts have done on their games.`
+  };
 }
 
 export default async function TeamPage(props: Params) {

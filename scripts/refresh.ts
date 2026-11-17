@@ -11,6 +11,20 @@ import { LEAGUE_IDS, LEAGUES, LeagueId } from '../lib/leagues';
 import { getLeagueModel } from '../lib/model';
 import { readLedger } from '../lib/model/ledger';
 import { getUfcModel } from '../lib/ufc/model';
+import { submitIndexNow } from '../lib/indexnow';
+import sitemap from '../app/sitemap';
+
+/** Every 6 hours the sitemap's new and week-old addresses go to IndexNow (Bing and the engines that share it). */
+const INDEXNOW_EVERY_MS = 6 * 3_600_000;
+let indexNowAt = 0;
+async function indexNow() {
+  indexNowAt = Date.now();
+  try {
+    return await submitIndexNow((await sitemap()).map((p) => p.url));
+  } catch (error) {
+    return `IndexNow failed: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
 
 const SOON_MS = 3 * 3_600_000;
 const FAST_MS = 10 * 60_000;
@@ -65,6 +79,8 @@ async function main() {
       ...LEAGUE_IDS.filter((id) => nextRun.get(id)! <= now).map(refresh),
       ...(nextRun.get('ufc')! <= now ? [refreshUfc()] : [])
     ]);
+    // After the models are fresh (the sitemap is built from them).
+    if (now - indexNowAt >= INDEXNOW_EVERY_MS) results.push(await indexNow());
     const next = Math.min(...nextRun.values());
     // Plain ASCII so the line survives being redirected to a log file on Windows.
     console.log(`${clock(now)}  ${results.join(' | ')} | next pass ${clock(next)}`);

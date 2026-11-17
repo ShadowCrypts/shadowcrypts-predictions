@@ -183,7 +183,11 @@ describe('UFC locked forecasts and addresses', () => {
   });
 
   it('knows the UFC pages and nothing else under /ufc', () => {
-    for (const ok of ['/ufc', '/ufc/event/600061400', '/ufc/fight/401913646', '/ufc/fighter/4426000']) assert.ok(isKnownPage(ok), ok);
-    for (const bad of ['/ufc/event', '/ufc/fight/abc', '/ufc/fighters/1', '/ufc/fight/1/extra', '/ufc/standings']) assert.equal(isKnownPage(bad), false, bad);
+    for (const ok of ['/ufc', '/ufc/event/600061400', '/ufc/fight/401913646', '/ufc/fighter/4426000', '/ufc/fight/401913646/opengraph-image', '/ufc/event/600061400/opengraph-image']) {
+      assert.ok(isKnownPage(ok), ok);
+    }
+    for (const bad of ['/ufc/event', '/ufc/fight/abc', '/ufc/fighters/1', '/ufc/fight/1/extra', '/ufc/standings', '/ufc/fighter/1/opengraph-image', '/ufc/fight/1/opengraph-image/x']) {
+      assert.equal(isKnownPage(bad), false, bad);
+    }
   });
 });

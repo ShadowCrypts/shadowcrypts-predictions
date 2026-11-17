@@ -33,7 +33,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { league: id } = await params;
   if (!isLeagueId(id)) return {};
   const league = LEAGUES[id];
-  return { title: `${league.name} predictions`, description: `${league.fullName} win probabilities, power rankings and model track record.` };
+  // As people search it: "NBA predictions today".
+  return {
+    title: `${league.name} predictions today: every game's win chances`,
+    description: `${league.fullName} predictions for today's games and the week ahead: win probabilities, the betting line, power rankings and an open track record of every pick.`
+  };
 }
 
 export default async function LeaguePage({ params }: Params) {
