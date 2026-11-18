@@ -82,10 +82,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             This site is still downloading its history{history.share > 0 && ` (${Math.round(history.share * 100)}% so far)`}.{history.forecastsSettled ? 'Game forecasts are within about a point or two of final;' : 'For the next few minutes game forecasts can be several points off;'} player numbers, prop records and fantasy rankings are thinner until it finishes.
           </p>
         )}
-        <main id="main" className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 sm:pt-8 md:pb-10">
+        <main id="main" className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 sm:pt-8 lg:pb-10">
           <PageTransition>{children}</PageTransition>
         </main>
-        <div className="pb-20 md:pb-0">
+        <div className="pb-20 lg:pb-0">
           <Footer />
         </div>
         <ParlayDock />
