@@ -46,6 +46,7 @@ async function pages() {
     '/nfl/players',
     '/nba/compare?a=3112335&b=3059318',
     '/nfl/fantasy',
+    '/nba/fantasy',
     '/nfl/start-sit',
     '/nfl/injuries',
     '/nhl/standings',

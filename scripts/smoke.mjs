@@ -130,7 +130,12 @@ async function main() {
       check('playoff machine answers in the offseason, picks or none', offseason.response.status === 200 && (offseason.body.includes('nothing to pick') || offseason.body.includes('Pick your winners')));
       const fantasy = await get('/nfl/fantasy');
       check('fantasy rankings list players with their record behind them', fantasy.response.status === 200 && fantasy.body.includes('Fantasy rankings') && (fantasy.body.includes('How much to trust this') || fantasy.body.includes('No NFL games on the board')));
-      check('fantasy rankings are football only', (await get('/nba/fantasy')).response.status === 404);
+      const hoops = await get('/nba/fantasy');
+      check('fantasy basketball lists players, the week and the record', hoops.response.status === 200 && hoops.body.includes('Fantasy basketball rankings') && ((hoops.body.includes('How much to trust this') && hoops.body.includes('Games this week')) || hoops.body.includes('No NBA games on the board')));
+      check('fantasy rankings are football and basketball only', (await get('/nhl/fantasy')).response.status === 404);
+      // A player on the board has the fantasy box on his page.
+      const hooper = hoops.body.match(/href="\/nba\/player\/(\d+)"/)?.[1];
+      if (hooper) check('NBA player page has his fantasy outlook', (await get(`/nba/player/${hooper}`)).body.includes('Fantasy outlook'));
       for (const id of ['nba', 'nfl', 'mlb', 'nhl']) {
         const injuries = await get(`/${id}/injuries`);
         check(`${id} injury report loads`, injuries.response.status === 200 && injuries.body.includes(`${id.toUpperCase()} injury report`));

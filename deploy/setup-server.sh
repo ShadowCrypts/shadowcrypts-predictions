@@ -121,7 +121,7 @@ fi
 install -m 644 "$HERE/shadowcrypts.service" "$unit"
 cat > /etc/cron.d/shadowcrypts-backup <<EOF
 # Every night: the records that can't be downloaded again (locked forecasts, logged picks, feedback), kept 30 days.
-17 4 * * * $APP umask 077 && cd $BASE/shared/.cache && tar -czf $BASE/backups/records-\$(date +\%F).tgz --ignore-failed-read ledger prop-ledger espn-ledger fantasy-ledger.json ufc-ledger.json movement odds-history feedback 2>/dev/null; find $BASE/backups -name 'records-*.tgz' -mtime +30 -delete
+17 4 * * * $APP umask 077 && cd $BASE/shared/.cache && tar -czf $BASE/backups/records-\$(date +\%F).tgz --ignore-failed-read ledger prop-ledger espn-ledger fantasy-ledger.json nba-fantasy-ledger-*.json ufc-ledger.json movement odds-history feedback 2>/dev/null; find $BASE/backups -name 'records-*.tgz' -mtime +30 -delete
 EOF
 systemctl daemon-reload
 systemctl enable shadowcrypts >/dev/null

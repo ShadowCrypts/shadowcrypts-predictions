@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChartLine, House, Ticket, Trophy } from 'lucide-react';
 
-/** NFL fantasy's pages: the Fantasy tab lights up on them, and the NFL tab doesn't. */
-const FANTASY = ['/nfl/fantasy', '/nfl/start-sit'];
+/** Fantasy pages: the Fantasy tab lights up on them, and the league's own tab doesn't. */
+const FANTASY = ['/nfl/fantasy', '/nfl/start-sit', '/nba/fantasy'];
 
 type NavLink = {
   href: string;
@@ -25,7 +25,7 @@ const LINKS: NavLink[] = [
   { href: '/', label: 'Today' },
   { href: '/live', label: 'Live', largeUp: true, live: true },
   { href: '/nfl', label: 'NFL', except: FANTASY },
-  { href: '/nba', label: 'NBA' },
+  { href: '/nba', label: 'NBA', except: FANTASY },
   { href: '/mlb', label: 'MLB' },
   { href: '/nhl', label: 'NHL' },
   { href: '/ufc', label: 'UFC' },
@@ -89,7 +89,7 @@ export function Nav() {
 const TABS: (Pick<NavLink, 'href' | 'label' | 'also' | 'except'> & { icon?: 'home' | 'props' | 'record' | 'fantasy' })[] = [
   { href: '/', label: 'Today', icon: 'home' },
   { href: '/nfl', label: 'NFL', except: FANTASY },
-  { href: '/nba', label: 'NBA' },
+  { href: '/nba', label: 'NBA', except: FANTASY },
   { href: '/mlb', label: 'MLB' },
   { href: '/nhl', label: 'NHL' },
   { href: '/ufc', label: 'UFC' },

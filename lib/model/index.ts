@@ -24,6 +24,7 @@ import { marketRatings } from './marketRatings';
 import { Band, bandFor, BandRecord, byBand, calibration, CalibrationBucket, Metrics, Outcome, summarize } from './metrics';
 import { espnHeadToHead, EspnLedger, EspnRecord, recordEspnForecasts } from './espnLedger';
 import { recordFantasyBoard } from './fantasyLedger';
+import { recordNbaFantasyBoard } from './nbaFantasyLedger';
 import { noteHistory } from './history';
 import { describeQb, GameQbs, qbChange, qbInjuryImpacts, qbPass } from './quarterbacks';
 import { getPropHistory, getUpcomingProps } from '../propFeed';
@@ -944,6 +945,7 @@ async function buildLeagueModel(id: LeagueId): Promise<LeagueModel> {
   }
   await recordMovement(id, model.slate, now);
   if (id === 'nfl') await recordFantasyBoard(league, model, now).catch(() => undefined);
+  if (id === 'nba') await recordNbaFantasyBoard(league, model, now).catch(() => undefined);
   return model;
 }
 

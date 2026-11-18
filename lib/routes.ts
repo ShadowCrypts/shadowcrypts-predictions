@@ -57,7 +57,7 @@ export function isKnownPage(pathname: string) {
   }
   if (!(LEAGUE_IDS as string[]).includes(first)) return false;
   if (rest.length === 0) return true;
-  // (Fantasy is football only; the page itself says so with a 404.)
+  // (Fantasy is football and basketball, start/sit football only; the pages themselves say so with a 404.)
   if (rest.length === 1) return ['players', 'compare', 'playoffs', 'fantasy', 'start-sit', 'injuries', 'standings'].includes(rest[0]);
   const [kind, id, extra] = rest;
   if ((kind !== 'game' && kind !== 'team' && kind !== 'player') || !ID.test(id)) return false;

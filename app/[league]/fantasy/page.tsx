@@ -9,6 +9,8 @@ import { fantasyBoard } from '../../../lib/model/fantasyBoard';
 import { fantasyForward } from '../../../lib/model/fantasyLedger';
 import { formatLongDay } from '../../../lib/time';
 import { FantasyBoardView } from '../../components/FantasyBoardView';
+import { FantasySportSwitch } from '../../components/FantasySportSwitch';
+import { NbaFantasyPage } from '../../components/NbaFantasyPage';
 import { EmptyState, PageHeader, Section } from '../../components/Section';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +19,13 @@ type Params = { params: Promise<{ league: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { league } = await params;
+  if (league === 'nba') {
+    return {
+      title: 'NBA fantasy basketball rankings today',
+      description: "Projected fantasy points for every NBA rotation player tonight and for the rest of the week, with each team's games this week and the record to back them.",
+      alternates: { canonical: '/nba/fantasy' }
+    };
+  }
   if (league !== 'nfl') return {};
   return {
     title: 'NFL fantasy football rankings this week',
@@ -27,7 +36,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function FantasyPage({ params }: Params) {
   const { league: id } = await params;
-  // Football only: it's the one league with a stat model behind every position people draft.
+  // Football and basketball: the leagues with a stat model behind every player people draft.
+  if (id === 'nba') return <NbaFantasyPage />;
   if (id !== 'nfl') notFound();
   const league = LEAGUES.nfl;
   const model = await getLeagueModel('nfl');
@@ -38,6 +48,7 @@ export default async function FantasyPage({ params }: Params) {
       <Link href="/nfl" className="inline-flex items-center gap-1 text-sm text-ink-2 hover:text-ink">
         <ChevronLeft className="h-4 w-4" aria-hidden /> NFL
       </Link>
+      <FantasySportSwitch current="nfl" />
       <PageHeader eyebrow={board ? `NFL · Week of ${formatLongDay(board.start)}` : 'NFL'} title="Fantasy rankings">
         <p>Projected points for this week&apos;s games, from the same player model behind our props. Ranked by points, discounted for the chance he sits. Tap + on two players to compare them.</p>
         <p className="mt-2">

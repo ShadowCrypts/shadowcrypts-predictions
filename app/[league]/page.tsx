@@ -117,8 +117,8 @@ export default async function LeaguePage({ params }: Params) {
           <Link href={`/${league.id}/injuries`} className="chip chip-idle">
             Injury report
           </Link>
-          {league.id === 'nfl' && (
-            <Link href="/nfl/fantasy" className="chip chip-idle">
+          {(league.id === 'nfl' || league.id === 'nba') && (
+            <Link href={`/${league.id}/fantasy`} className="chip chip-idle">
               Fantasy rankings
             </Link>
           )}

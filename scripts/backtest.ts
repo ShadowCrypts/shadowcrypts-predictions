@@ -18,6 +18,7 @@ import { fantasyBacktest } from './fantasy-backtest';
 import { hitRateBacktest } from './hitrate-backtest';
 import { correlationBacktest } from './correlation-backtest';
 import { livePropBacktest } from './liveprop-backtest';
+import { nbaFantasyBacktest } from './nba-fantasy-backtest';
 import { propEngine } from '../lib/model/propEngines';
 import { Game, getClosingOdds, getLeagueGames, getTeams, MarketOdds } from '../lib/espn';
 import { EloParams, LEAGUE_IDS, LEAGUES, LeagueConfig } from '../lib/leagues';
@@ -264,14 +265,16 @@ async function main() {
     return;
   }
   if (process.argv.includes('--fantasy')) {
-    const league = LEAGUES.nfl;
+    // `--league=nba` runs fantasy basketball; football otherwise.
+    const league = process.argv.includes('--league=nba') ? LEAGUES.nba : LEAGUES.nfl;
     const [games, teams] = await Promise.all([getLeagueGames(league), getTeams(league)]);
     const regular = games.filter((g) => g.seasonType === 2 || g.seasonType === 3);
     const first = Math.min(...regular.map((g) => g.seasonYear));
     const closingOdds = await getClosingOdds(league, regular.filter((g) => g.completed && g.seasonYear > first));
     const [boxScores, skillBoxes] = await Promise.all([getBoxScores(league, regular), getNflSkillBoxes(league, regular)]);
     console.log(`\n=== ${league.name} fantasy projections ===`);
-    await fantasyBacktest(league, { games, teams, closingOdds, boxScores, skillBoxes });
+    if (league.id === 'nba') await nbaFantasyBacktest(league, { games, teams, closingOdds, boxScores, skillBoxes });
+    else await fantasyBacktest(league, { games, teams, closingOdds, boxScores, skillBoxes });
     return;
   }
   if (process.argv.includes('--hit-rates')) {
