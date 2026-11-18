@@ -19,7 +19,10 @@ const nextConfig: NextConfig = {
     // Logos are resized by ESPN's image service (lib/imageLoader.ts), which keeps
     // Next's own image optimizer, and its security bugs, switched off.
     loader: 'custom',
-    loaderFile: './lib/imageLoader.ts'
+    loaderFile: './lib/imageLoader.ts',
+    // Next's sizes plus 160 and 192, so the big headshots (72 and 88 pixels) come at about twice their size on a
+    // phone's screen instead of jumping to 256: 39 KB instead of 66 KB for a player page's photo, looking the same.
+    imageSizes: [16, 32, 48, 64, 96, 128, 160, 192, 256, 384]
   },
   async headers() {
     return [

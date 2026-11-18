@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { leagueName } from '../../lib/leagueName';
 import type { LeagueId } from '../../lib/leagues';
 import type { CardData } from '../../lib/model/card';
-import { etDateKey, relativeDayLabel } from '../../lib/time';
+import { etDateKey, formatShortDate, relativeDayLabel } from '../../lib/time';
 import { CalendarButton } from './CalendarButton';
 import { teamKey, useFavorites } from './favorites';
 import { GameCard } from './GameCard';
@@ -34,12 +34,21 @@ function Chip({ active, onClick, children, label }: { active: boolean; onClick: 
 
 const Count = ({ n }: { n: number }) => <span className="text-xs tabular text-ink-3">{n}</span>;
 
+/**
+ * A long board shows its first two days (or first 24 games by confidence) and the rest a tap away: on a phone,
+ * dozens of cards for later in the week slowed the first view for games few people open yet.
+ */
+const SHOWN_DAYS = 2;
+const SHOWN_CARDS = 24;
+const LONG_BOARD = 30;
+
 export function Board({ cards, leagues, emptyText }: { cards: CardData[]; leagues?: LeagueId[]; emptyText: string }) {
   const { favorites } = useFavorites();
   const [league, setLeague] = useState<LeagueId | 'all'>('all');
   const [status, setStatus] = useState<Status>('all');
   const [sort, setSort] = useState<Sort>('time');
   const [mine, setMine] = useState(false);
+  const [everything, setEverything] = useState(false);
 
   const isMine = (c: CardData) => favorites.has(teamKey(c.league, c.home.teamId)) || favorites.has(teamKey(c.league, c.away.teamId));
   const multiLeague = (leagues?.length ?? 0) > 1;
@@ -62,6 +71,11 @@ export function Board({ cards, leagues, emptyText }: { cards: CardData[]; league
     }
     return [...byDay];
   }, [visible, sort]);
+  // What's held back until asked for, on a long board.
+  const shortened = !everything && visible.length > LONG_BOARD;
+  const shown = shortened ? (sort === 'time' ? groups.slice(0, SHOWN_DAYS) : [['', visible.slice(0, SHOWN_CARDS)] as const]) : groups;
+  const held = visible.length - shown.reduce((n, [, list]) => n + list.length, 0);
+  const lastDay = sort === 'time' && groups.length > SHOWN_DAYS ? groups[groups.length - 1][0] : null;
 
   const liveCount = cards.filter((c) => c.state === 'in').length;
   const mineCount = cards.filter(isMine).length;
@@ -128,7 +142,7 @@ export function Board({ cards, leagues, emptyText }: { cards: CardData[]; league
                 : 'No games match these filters.'}
           </EmptyState>
         ) : (
-          groups.map(([day, list]) => (
+          shown.map(([day, list]) => (
             <div key={day || 'all'}>
               {day && (
                 <h3 className="mb-3 flex items-baseline gap-2 text-sm font-semibold text-ink">
@@ -145,6 +159,12 @@ export function Board({ cards, leagues, emptyText }: { cards: CardData[]; league
               </div>
             </div>
           ))
+        )}
+        {shortened && held > 0 && (
+          <button type="button" onClick={() => setEverything(true)} className="chip chip-idle w-full justify-center">
+            Show {held} more {held === 1 ? 'game' : 'games'}
+            {lastDay && <span className="text-ink-3">through {formatShortDate(`${lastDay}T16:00:00Z`)}</span>}
+          </button>
         )}
       </div>
     </div>

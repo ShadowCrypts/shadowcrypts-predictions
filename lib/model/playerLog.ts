@@ -101,15 +101,28 @@ function boxPlayer(box: BoxScore | null | undefined, skill: NflSkillBox | null |
   return null;
 }
 
-/**
- * A player's most recent games, newest first: what he did in each prop market,
- * and the book's main line that game where one is on file. `keep` narrows it
- * (games against one opponent, say). Reads only what's already stored; nothing
- * new is fetched for a page view.
- */
-export async function playerLog(league: LeagueConfig, model: LeagueModel, playerId: string, limit = 12, keep?: (game: PlayerGame) => boolean): Promise<PlayerLog | null> {
-  const engine = propEngine(league);
-  if (!engine) return null;
+/** Everyone who appears in a game's stored box scores. */
+function playersIn(box: BoxScore | null | undefined, skill: NflSkillBox | null | undefined): string[] {
+  const ids: string[] = [];
+  if (box?.league === 'nba') for (const lines of Object.values(box.teams)) for (const l of lines) ids.push(l.id);
+  if (box?.league === 'nhl') for (const team of Object.values(box.teams)) for (const p of [...team.skaters, ...team.goalies]) ids.push(p.id);
+  if (box?.league === 'nfl') for (const team of Object.values(box.teams)) for (const p of team.passers) ids.push(p.id);
+  if (skill) for (const lines of Object.values(skill.teams)) for (const l of lines) ids.push(l.id);
+  return ids;
+}
+
+/** Every finished game newest first, its stored box scores and lines, and where each player appears in them. */
+type LogData = {
+  finished: Game[];
+  box: Record<string, BoxScore | null>;
+  skill: Record<string, NflSkillBox | null>;
+  props: Record<string, PropLine[] | null>;
+  inputs: PropInputs;
+  /** Positions in `finished` of each player's games, newest first. */
+  appearances: Map<string, number[]>;
+};
+
+async function loadLogData(league: LeagueConfig, model: LeagueModel): Promise<LogData> {
   const finished: Game[] = Object.values(model.predictions)
     .map((p) => p.game)
     .filter((g) => g.completed)
@@ -119,6 +132,14 @@ export async function playerLog(league: LeagueConfig, model: LeagueModel, player
     getNflSkillBoxes(league, finished, 0).catch(() => ({}) as Record<string, NflSkillBox | null>),
     getPropHistory(league, finished, 0).catch(() => ({}) as Record<string, PropLine[] | null>)
   ]);
+  const appearances = new Map<string, number[]>();
+  finished.forEach((game, i) => {
+    for (const id of new Set(playersIn(box[game.id], skill[game.id]))) {
+      const list = appearances.get(id);
+      if (list) list.push(i);
+      else appearances.set(id, [i]);
+    }
+  });
   const inputs: PropInputs = {
     games: finished,
     box,
@@ -126,20 +147,59 @@ export async function playerLog(league: LeagueConfig, model: LeagueModel, player
     context: { teamPoints: new Map(), leaguePoints: new Map() },
     live: { rosters: {}, injuries: {}, starters: new Map() }
   };
+  return { finished, box, skill, props, inputs, appearances };
+}
+
+/**
+ * Worked out once per model build and shared by every player page (each page reads a player's log three or
+ * four times), rather than sorting and scanning every stored game on each read.
+ */
+const logData = new WeakMap<LeagueModel, Promise<LogData>>();
+function logDataFor(league: LeagueConfig, model: LeagueModel) {
+  let data = logData.get(model);
+  if (!data) {
+    data = loadLogData(league, model);
+    logData.set(model, data);
+    // A failed read isn't kept: the next page tries again.
+    data.catch(() => logData.delete(model));
+  }
+  return data;
+}
+
+/**
+ * A player's most recent games, newest first: what he did in each prop market,
+ * and the book's main line that game where one is on file. `keep` narrows it
+ * (games against one opponent, say). Reads only what's already stored; nothing
+ * new is fetched for a page view.
+ */
+export async function playerLog(
+  league: LeagueConfig,
+  model: LeagueModel,
+  playerId: string,
+  limit = 12,
+  keep?: (game: Omit<PlayerGame, 'stats' | 'lines'>) => boolean
+): Promise<PlayerLog | null> {
+  const engine = propEngine(league);
+  if (!engine) return null;
+  const { finished, box, skill, props, inputs, appearances } = await logDataFor(league, model);
   const games: PlayerGame[] = [];
   let who: { name: string; teamId: string } | null = null;
-  for (const game of finished) {
+  for (const at of appearances.get(playerId) ?? []) {
+    const game = finished[at];
     const found = boxPlayer(box[game.id], skill[game.id], playerId);
-    const stats = found ? engine.actuals(game.id, inputs)?.get(playerId) : undefined;
-    if (!found || !stats) continue;
+    if (!found) continue;
+    const home = game.home.teamId === found.teamId;
+    const base = { gameId: game.id, date: game.date, seasonYear: game.seasonYear, opponent: (home ? game.away : game.home).abbr, home, neutral: game.neutral, detail: found.detail };
+    // Narrowed first, so a game that's left out costs nothing more.
+    if (keep && !keep(base)) continue;
+    const stats = engine.actuals(game.id, inputs)?.get(playerId);
+    if (!stats) continue;
     who ??= found;
     const lines: PlayerGame['lines'] = {};
     for (const l of mainLines((props[game.id] ?? []).filter((x) => x.athleteId === playerId && isPriced(x)))) {
       lines[l.market] = { line: l.line, over: l.over, under: l.under, book: l.book };
     }
-    const home = game.home.teamId === found.teamId;
-    const played: PlayerGame = { gameId: game.id, date: game.date, seasonYear: game.seasonYear, opponent: (home ? game.away : game.home).abbr, home, neutral: game.neutral, detail: found.detail, stats, lines };
-    if (keep && !keep(played)) continue;
+    const played: PlayerGame = { ...base, stats, lines };
     games.push(played);
     if (games.length >= limit) break;
   }
